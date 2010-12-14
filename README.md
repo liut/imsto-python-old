@@ -15,8 +15,8 @@ launch development
 * mongodb: 
 
    mongo localhost/storage
-   db.createCollection("img.files",{autoIndexId:false}) 
-   db.img.files.ensureIndex({md5:1},{background:true, unique:true, dropDups:true});
+      db.createCollection("img.files",{autoIndexId:false}) 
+      db.img.files.ensureIndex({md5:1},{background:true, unique:true, dropDups:true});
 
 * nginx: add config/nginx/host.imsto.conf to nginx.conf
 
