@@ -15,7 +15,7 @@ defaulting = {
 'support_size': '[120, 130, 160]'
 }
 config = ConfigParser.SafeConfigParser(defaulting)
-ini_file = os.path.join(os.path.dirname(__file__), '../config/imgsto.ini')
+ini_file = os.path.join(os.path.dirname(__file__), '../config/imsto.ini')
 config.read(ini_file)
 
 GRID_SERVERS = config.get('imsto', 'servers')
