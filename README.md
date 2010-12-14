@@ -16,3 +16,10 @@ launch development
 * uwsgi: uwsgi -s /tmp/uwsgi_ih.sock --ini config/uwsgi/dev.ini:app_ih
 
 
+TODO list
+---------
+
+- store tool or service
+- (web) grid manager
+- (web) upload
+
