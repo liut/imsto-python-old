@@ -4,24 +4,14 @@ rule: (path) aj/3f/1ow9y7ks8w8s888kswkg8.jpg => (_id) aj3f1ow9y7ks8w8s888kswkg8
 
 """
 
-import ConfigParser, os, re
+import _config, os, re
 
-os.environ['PYTHON_EGG_CACHE'] = '/opt/imsto/cache/eggs'
+config = _config.Config()
 
-defaulting = {
-'servers': 'localhost',
-'thumb_path': '/thumb',
-'thumb_root': '/opt/imsto/cache/thumb/',
-'support_size': '[120, 130, 160]'
-}
-config = ConfigParser.SafeConfigParser(defaulting)
-ini_file = os.path.join(os.path.dirname(__file__), '../config/imsto.ini')
-config.read(ini_file)
-
-GRID_SERVERS = config.get('imsto', 'servers')
-THUMB_PATH = config.get('imsto', 'thumb_path').rstrip('/')
-THUMB_ROOT = config.get('imsto','thumb_root').rstrip('/')
-SUPPORTED_SIZE = eval(config.get('imsto', 'support_size'))
+GRID_SERVERS = config.get('servers')
+THUMB_PATH = config.get('thumb_path').rstrip('/')
+THUMB_ROOT = config.get('thumb_root').rstrip('/')
+SUPPORTED_SIZE = eval(config.get('support_size'))
 
 def print_env():
 	"""list environ"""
