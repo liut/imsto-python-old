@@ -4,9 +4,9 @@ ImSto: a little image storage
 Requirements
 -----------
 
- * mongodb
- * python
- * nginx + uwsgi
+ * MongoDB (GridFS)
+ * Python + pymongo + PIL
+ * Nginx + uWSGI
 
 
 Launch development
@@ -15,7 +15,7 @@ Launch development
 * mongodb: 
 
    `mongo localhost/storage`
-      db.createCollection("img.files",{autoIndexId:false}) 
+      db.createCollection("img.files",{autoIndexId:false});
       db.img.files.ensureIndex({md5:1},{background:true, unique:true, dropDups:true});
 
 * nginx: add config/nginx/host.imsto.conf to nginx.conf
@@ -28,7 +28,7 @@ Launch development
 TODO list
 ---------
 
-- store tool or service
-- (web) grid manager
-- (web) upload
+- store tool and service
+- (web) gallery manager
+- (web) image upload
 
