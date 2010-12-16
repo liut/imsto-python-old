@@ -12,9 +12,9 @@ class Dispatcher(object):
 		path_info = environ.get('PATH_INFO', '')
 		if (path_info == '/Gallery'):
 			pass
-		elif (path_info = '/Upload'):
+		elif (path_info == '/Upload'):
 			pass
-		elif (path_info == '/env'):
+		elif (path_info == '/env' and environ.get('REMOTE_ADDR','') == '127.0.0.1'):
 			import printenv
 			return printenv.print_env(environ, start_response)
 		else:

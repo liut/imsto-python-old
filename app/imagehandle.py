@@ -57,8 +57,8 @@ def image_handle_main(environ, start_response):
 				return not_found(environ, start_response)
 			thumb_image(org_file, size, dst_file)
 		#print(dst_file)
-		server_soft = environ.get('SERVER_SOFTWARE')
-		if server_soft is not None and server_soft[:5] == 'nginx' and os.name != 'nt':
+		server_soft = environ.get('SERVER_SOFTWARE','')
+		if server_soft[:5] == 'nginx' and os.name != 'nt':
 			start_response('200 OK', [('X-Accel-Redirect', '{0}/{1}'.format(THUMB_PATH, dst_path))])
 			return []
 		#print(file.type) 
