@@ -1,20 +1,25 @@
+# encoding: utf-8
 """
+imagestore.py
+
 imsto: image handler
 rule: (path) aj/3f/1ow9y7ks8w8s888kswkg8.jpg => (_id) aj3f1ow9y7ks8w8s888kswkg8
 
+Created by liut on 2010-12-04.
+Copyright (c) 2010 liut. All rights reserved.
 """
+
 
 import _config, os, re
 
 config = _config.Config()
 
-GRID_SERVERS = config.get('servers')
 THUMB_PATH = config.get('thumb_path').rstrip('/')
 THUMB_ROOT = config.get('thumb_root').rstrip('/')
 SUPPORTED_SIZE = eval(config.get('support_size'))
 
 def print_env():
-	"""list environ"""
+	"""list environ items"""
 	start_response('200 OK', [('Content-Type', 'text/plain')])
 	return ['\n'.join(['%s: %r' % item for item in environ.items()])]
 
@@ -27,6 +32,7 @@ def not_found(environ, start_response):
 
 
 def image_handle_main(environ, start_response):
+	"""main url process"""
 	path = environ.get('PATH_INFO', '')
 	image_url_regex = r'/([a-z0-9]{2})/([a-z0-9]{2})/([a-z0-9]{20,36})(-[sc]\d{2,4})?\.(gif|jpg|jpeg|png)$'
 	match = re.search(image_url_regex, path)
@@ -72,8 +78,9 @@ def image_handle_main(environ, start_response):
 def load_file(id):
 	from pymongo import Connection
 	import gridfs
-	db = Connection(GRID_SERVERS).storage
-	fs = gridfs.GridFS(db,'img')
+	c = Connection(config.get('servers'),slave_okay=True)
+	db = c[config.get('db_name')]
+	fs = gridfs.GridFS(db,config.get('fs_prefix'))
 	if fs.exists(id):
 		return fs.get(id)
 	#return None

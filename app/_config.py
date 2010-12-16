@@ -1,5 +1,9 @@
+# encoding: utf-8
 """
 ImSto Config
+
+Created by liut on 2010-12-15.
+Copyright (c) 2010 liut. All rights reserved.
 """
 
 import ConfigParser,os
@@ -10,6 +14,8 @@ class Config():
 		
 		defaulting = {
 		'servers': 'localhost',
+		'db_name': 'storage',
+		'fs_prefix': 'img',
 		'thumb_path': '/thumb',
 		'thumb_root': '/opt/imsto/cache/thumb/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
