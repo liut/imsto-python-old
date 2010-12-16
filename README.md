@@ -22,7 +22,7 @@ Launch development
 
    `include /opt/imsto/config/nginx/host.imsto.conf;`
 
-* uwsgi: `uwsgi -s /tmp/uwsgi_ih.sock --ini config/uwsgi/dev.ini:app_ih`
+* uwsgi: `uwsgi -s /tmp/uwsgi_ih.sock --ini config/uwsgi/dev.ini`
 
 
 TODO list

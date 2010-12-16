@@ -1,6 +1,6 @@
 # encoding: utf-8
 """
-imagestore.py
+imagehandle.py
 
 imsto: image handler
 rule: (path) aj/3f/1ow9y7ks8w8s888kswkg8.jpg => (_id) aj3f1ow9y7ks8w8s888kswkg8
@@ -17,11 +17,6 @@ config = _config.Config()
 THUMB_PATH = config.get('thumb_path').rstrip('/')
 THUMB_ROOT = config.get('thumb_root').rstrip('/')
 SUPPORTED_SIZE = eval(config.get('support_size'))
-
-def print_env():
-	"""list environ items"""
-	start_response('200 OK', [('Content-Type', 'text/plain')])
-	return ['\n'.join(['%s: %r' % item for item in environ.items()])]
 
 def not_found(environ, start_response):
 	"""Called if no URL matches."""
