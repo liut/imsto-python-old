@@ -40,7 +40,8 @@ Launch development
 TODO list
 ---------
 
-- store tool and service
-- (web) gallery manager
-- (web) image upload
+- store tool (closed 50%)
+- <del>(web) gallery manager</del>
+- <del>(web) image upload</del>
+- permisions
 
