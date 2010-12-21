@@ -1,0 +1,85 @@
+
+.box{
+	width:600px;margin:auto;padding:.8em;
+	text-shadow: black 0px 1px 1px;
+}
+.box label{float: left;}
+#dropbox {
+    display: block;
+    margin: auto;
+    z-index: 9999;
+    margin-top: 10px;
+}
+
+#dropbox path {
+    stroke: #aaa;
+    stroke-width: 10px;
+    stroke-linejoin: round;
+    fill: rgba(0, 0, 0, 0.5);
+    stroke-dasharray: 42, 4;
+}
+
+#dropbox text {
+    fill: white;
+    font-size: 20px;
+    text-anchor: middle;
+}
+
+#dropbox[dragenter="true"] {
+	-moz-transform: scale(2, 1.5);
+}
+
+
+#image-pic-list {/*-moz-column-count: 3;*/
+	clear: both;
+}
+#image-pic-list li{
+	min-width: 120px; max-width: 240px; height: 220px; margin: .8em; margin-right: 1.8em; margin-bottom: 1.8em; padding: .5em;
+	display: block; float: left; text-align: center;
+	-moz-box-shadow: 0 0 6px 4px rgba(80, 80, 80, 0.2);
+}
+#image-pic-list li.new{-moz-box-shadow: 0 0 6px 4px rgba(200, 80, 80, 0.4);}
+
+#image-pic-list li img { display: block;
+	max-width: 200px; max-height: 180px; margin: auto; border: 1px solid Gray;
+}
+#image-pic-list li .lbl {float: left; margin-top:5px; max-width: 150px;}
+#image-pic-list li .btn {float: right; margin-top: 6px;cursor: pointer;}
+.throbber {
+	position: absolute;
+	z-index: 99999;
+}
+
+input {
+	display: block;
+	margin: auto;
+}
+button {
+	float: right;
+}
+#buttons-panel{min-height: 3em; clear: both;}
+#buttons-panel .btn{min-height: 1.5em; margin: .4em .2em .2em 2em;float:left;}
+#progressbar{width: 50%;float:left;}
+
+pre{display:block;margin:auto;}
+
+fieldset {
+    padding:10px;
+    margin:10px;
+    width:500px;
+    color:#333;
+    border:#ccc solid 0.5px;
+}
+legend {
+    color:#06c;
+    font-weight:800;
+    background:#fff;
+    border:#b6b6b6 solid 1px;
+    padding:5px 12px;
+} 
+
+.nav{
+	float: left;
+}
+.button{ margin: .5em .5em .5em 1.5em;}
+

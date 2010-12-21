@@ -1,0 +1,36 @@
+/* reset */
+/** 清除内外边距 **/
+body, h1, h2, h3, h4, h5, h6, hr, p, blockquote /* structural elements 结构元素 */
+,dl, dt, dd, ul, ol, li /* list elements 列表元素 */
+,pre /* text formatting elements 文本格式元素 */
+,form, fieldset, legend, button, input, textarea /* form elements 表单元素 */
+{ /* ,th, td table elements 表格元素 */
+	margin: 0;
+	padding: 0;
+}
+
+/** 设置默认字体 **/
+body {
+	/*font: 12px/1 Tahoma, Helvetica, Arial, "宋体", sans-serif;*/
+	font: 75%/1 Helvetica, Tahoma, Arial, "\5fae\8f6f\96c5\9ed1", "\5b8b\4f53", sans-serif; /* 用 ascii 字符表示，使得在任何编码下都无问题 */
+}
+
+span.tip_text{font-size: .8em; line-height: 1.2em; padding: 2px; color: gray;}
+form input[type=text],
+form input[type=password],
+form select,
+form textarea{
+	padding: 3px 1px 2px 3px;border: 1px solid #333;
+	border-radius:3px; -moz-border-radius:3px; -webkit-border-radius:3px;
+}
+form input[type=text]:focus,
+form input[type=password]:focus,
+form select:focus,
+form textarea:focus{
+	border-color:rgba(204,85,0,0.75);
+	box-shadow: 0 0 .5em rgba(238,85,0,0.5);-moz-box-shadow: 0 0 .5em rgba(238,85,0,0.5);-webkit-box-shadow: 0 0 .5em #E50;
+}
+
+
+#rsp-status {position:absolute; z-index: 5; left:76px; top: 16px;}
+
