@@ -32,7 +32,7 @@ class ImSto:
 		items = []
 		for item in cursor:
 			items.append(self.makeItem(item))
-		return {'items':items,'total':cursor.count()}
+		return {'items':items,'total':cursor.count(),'url_prefix': config.get('url_prefix')}
 		
 	def store(self, file, ctype, name):
 		"""save a file to mongodb"""

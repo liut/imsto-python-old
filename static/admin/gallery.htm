@@ -55,7 +55,7 @@
 					var url_prefix = data.url_prefix ? data.url_prefix : "http://m.imsto.net/"; // test only, 正式环境需要修改
 					$("#image-list").empty();
 
-					$.each(data.items, function(i, item){console.log(item);
+					$.each(data.items, function(i, item){//console.log(item);
 						var alt = (item.width && item.height) ? (item.width+'x'+item.height) : '';
 						if (item.created) {
 							alt += ' 上传时间: ' + item.created;

@@ -18,6 +18,7 @@ class Config():
 		'fs_prefix': 'img',
 		'thumb_path': '/thumb',
 		'thumb_root': '/opt/imsto/cache/thumb/',
+		'url_prefix': 'http://m.imsto.net/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
 		'support_size': '[120, 130, 160]'
 		}
