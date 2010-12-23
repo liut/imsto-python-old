@@ -12,9 +12,8 @@ import re
 import sys
 import os
 import getopt
-from pymongo import Connection
 import gridfs
-from PIL import Image
+#from PIL import Image
 import _config
 config = _config.Config()
 
@@ -40,14 +39,17 @@ class ImSto:
 			raise TypeError('invalid file-like object')
 		if ctype is None or ctype == '':
 			raise ValueError('invalid content type value')
-		try:
-			im = Image.open(file)
-		except : #IOError
-			return [False, 'invalid image file']
+		#try:
+		#	im = Image.open(file)
+		#except : #IOError
+		#	return [False, 'invalid image file']
 		
-		print(im.format)
-		from hashlib import md5
+		#print(im.format)
 		data = file.read()
+		ext = getImageType(data)
+		if ext is None:
+			return [False, 'invalid image file']
+		from hashlib import md5
 		hashed = md5(data).hexdigest()
 		print ('md5 hash: {}'.format(hashed))
 		id = self.makeId(hashed)
@@ -57,12 +59,9 @@ class ImSto:
 			print ('id {} or hash {} exists!!'.format(id, hashed))
 			return [False, 'exists']
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
-		import mimetypes
-		mimetypes.init()
-		ext = mimetypes.guess_extension(ctype).replace('jpe', 'jpg')
-		filename = '{0[0]}/{0[1]}/{0[2]}{1}'.format(match.groups(), ext)
+		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
-		return [True, fs.put(data, _id=id, filename=filename, type=ctype,org_name=name,format=im.format), filename]
+		return [True, fs.put(data, _id=id, filename=filename, type=ctype,org_name=name), filename]
 		
 		
 	def get(self, id):
@@ -91,7 +90,6 @@ class ImSto:
 		newItem = item.copy()
 		newItem['id'] = newItem.pop('_id')
 		newItem['created'] = newItem.pop('uploadDate')
-		newItem['size'] = newItem.pop('length')
 		newItem.pop('chunkSize', None)
 		newItem.pop('app_id', None)
 		return newItem
@@ -102,7 +100,8 @@ class ImSto:
 		return gridfs.GridFS(self.db,config.get('fs_prefix'))
 
 	def getDb(self):
-		c = Connection(config.get('servers'),slave_okay=True)
+		from pymongo import Connection
+		c = Connection(config.get('servers'))
 		return c[config.get('db_name')]
 
 	def getCollection(self):
@@ -117,6 +116,21 @@ class ImSto:
 			self.db.connection.disconnect()
 
 
+sig_gif = b'GIF'
+sig_jpg = b'\xff\xd8\xff'
+#sig_png = b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a'
+sig_png = b"\211PNG\r\n\032\n"
+
+def getImageType(data):
+	if data[:3] == sig_gif:
+		return 'gif'
+	elif data[:3] == sig_jpg:
+		return 'jpg'
+	elif data[:8] == sig_png:
+		return 'png'
+	else:
+		return None
+
 
 help_message = '''
 Usage: store.py [options] [filename]
@@ -125,6 +139,7 @@ Options:
   -i, --import     Import file to storeage
   -q, --id        get a file by id
   -l, --list       List files
+  -l, --list       test a file
   -h, --help       Show this message
   -v, --verbose    Verbose output
   -q, --quiet      Minimal output
@@ -143,7 +158,7 @@ def main(argv=None):
 	
 	try:
 		try:
-			opts, args = getopt.getopt(argv[1:], "hi:q:lv", ["help", "import=", "id=", "list", "limit=", "start="])
+			opts, args = getopt.getopt(argv[1:], "hi:q:lt:v", ["help", "import=", "id=", "list", "test", "verbose", "limit=", "start="])
 		except getopt.error, msg:
 			raise Usage(msg)
 		
@@ -163,15 +178,20 @@ def main(argv=None):
 				action = 'import'
 			elif option in ("-l", "--list"):
 				action = 'list'
+			elif option in ("-t", "--test"):
+				action = 'test'
+				filename = value
 			elif option in ("-q", "--id"):
 				action = 'get'
 				id = value
 			else:
 				pass
+		print('action: {}'.format(action))
 		if (action == 'list'):
 			imsto = ImSto()
 			gallery = imsto.browse()
 			for img in gallery['items']:
+				#print(img)
 				print("{0[filename]}\t{0[length]:8,d}".format(img))
 			return 0
 		elif (action == 'get') and id is not None:
@@ -182,7 +202,13 @@ def main(argv=None):
 			gf = imsto.get(id)
 			#print(gf)
 			print ("found: {0.name}\t{0.length}".format(gf))
-			
+			return 0
+		elif (action == 'test'):
+			print('filename: %r' % filename)
+			fp = open(filename, 'rb')
+			h = fp.read(32)
+			print(getImageType(h))
+			return 0
 				
 
 	except Usage, err:

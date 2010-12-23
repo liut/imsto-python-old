@@ -93,14 +93,14 @@ def save_file(file, filename):
 
 
 def thumb_image(filename, size_x, distname):
-	from PIL import Image
+	from magickwand.image import Image
 	size = size_x, size_x
 	#print(size)
-	im = Image.open(filename)
+	im = Image(filename)
 	if im.size > size:
 		print('thumbnail {0} to: {1}'.format(filename, size_x))
-		im.thumbnail(size, Image.ANTIALIAS)
-	im.save(distname, im.format)
+		im.thumbnail(size_x)
+	im.save(distname)
 	
 
 

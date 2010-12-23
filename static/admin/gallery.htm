@@ -63,7 +63,7 @@
 						var _li = $("<li></li>").attr("id", "li_iid" + item.id).appendTo("#image-list"), 
 							_a = $("<a></a>").attr("href", url_prefix + item.filename).attr("title", item.filename+" ("+alt+")"),
 							_img = $("<img/>").attr("src", url_prefix + item.filename.replace(r_img_ext,f_img_replace)).attr('alt',alt).attr("class", ""),
-							_txt = $("<span></span>").attr("class", "lbl").attr("title",item.size).text(format_size(item.size)),
+							_txt = $("<span></span>").attr("class", "lbl").attr("title",item.length).text(format_size(item.length)),
 							_btn = $("<span></span>").attr("class", "btn btn_delete ui-corner-all ui-icon ui-icon-trash").attr("title", "删除")
 								.click(function(){
 									if (!confirm("确认要删除此图片么，此操作将不可恢复？")) return false;
