@@ -40,10 +40,11 @@ Launch development
 TODO list
 ---------
 
-- store tool (closed 50%)
+- store tool (closed 60%)
 - <del>(web) gallery manager</del>
 - <del>(web) image upload</del>
 - permisions
+- demo: <http://demo.imsto.org:81/>
 
 [pymongo]: http://pypi.python.org/pypi/pymongo/
 [magckwand]: http://pypi.python.org/pypi/magickwand/0.2
