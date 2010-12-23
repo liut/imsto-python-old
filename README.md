@@ -5,8 +5,8 @@ Requirements
 -----------
 
  * MongoDB (GridFS)
- * Python + pymongo + magckwand
- * Nginx + uWSGI
+ * Python + [pymongo][pymongo] + [magckwand][magckwand]
+ * Nginx + [uWSGI][uWSGI]
 
 
 Launch development
@@ -45,3 +45,6 @@ TODO list
 - <del>(web) image upload</del>
 - permisions
 
+[pymongo]: http://pypi.python.org/pypi/pymongo/
+[magckwand]: http://pypi.python.org/pypi/magickwand/0.2
+[uWSGI]: http://projects.unbit.it/uwsgi/
