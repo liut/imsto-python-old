@@ -18,6 +18,7 @@ prefix=/opt/imsto
 #exec_prefix=${prefix}
 
 PATH=/opt/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/opt/bin
+PYTHON_EGG_CACHE=${prefix}/cache/eggs
 
 uwsgi_BIN=`which uwsgi`
 uwsgi_pidfile="${prefix}/logs/${name}.pid"

@@ -20,6 +20,7 @@ CACHE_DIR="${prefix}/cache"
 LOGS_DIR="${prefix}/logs"
 
 PATH=/opt/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/opt/bin
+PYTHON_EGG_CACHE=${prefix}/cache/eggs
 
 uwsgi_BIN=`which uwsgi`
 uwsgi_pidfile="${prefix}/logs/${name}.pid"

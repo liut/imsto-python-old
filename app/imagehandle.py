@@ -73,7 +73,7 @@ def image_handle_main(environ, start_response):
 def load_file(id):
 	from pymongo import Connection
 	import gridfs
-	c = Connection(config.get('servers'),slave_okay=True)
+	c = Connection(config.get('servers'))
 	db = c[config.get('db_name')]
 	fs = gridfs.GridFS(db,config.get('fs_prefix'))
 	if fs.exists(id):

@@ -10,6 +10,8 @@ def not_found(environ, start_response):
 
 def print_env(environ, start_response):
 	"""list environ items"""
+	import os
+	print(os.environ)
 	from cgi import FieldStorage
 	form = FieldStorage(environ=environ)
 	#print(form.keys())
