@@ -31,9 +31,9 @@ Launch development
 * uwsgi: there have two socket service
 
 	 start image handle:
-		uwsgi --ini config/uwsgi/dev.ini -s /tmp/imsto_img.sock -w imagehandle -d logs/images.log
+		uwsgi --pp /opt/imsto/app --vacuum -C 666 -s /tmp/imsto_img.sock -p 2 -M -t 20 --limit-as 128 -m -w imagehandle -d logs/images.log
 	 start manage handle:
-		uwsgi --ini config/uwsgi/dev.ini -s /tmp/imsto_man.sock -w managehandle -d logs/manage.log
+		uwsgi --pp /opt/imsto/app --vacuum -C 666 -s /tmp/imsto_man.sock -p 1 -M -t 20 --limit-as 128 -m -w managehandle -d logs/manage.log
 
 * open url http://man.imsto.net/
 
