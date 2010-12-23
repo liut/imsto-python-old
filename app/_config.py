@@ -20,6 +20,7 @@ class Config():
 		'thumb_root': '/opt/imsto/cache/thumb/',
 		'url_prefix': 'http://m.imsto.net/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
+		'max_file_size': '102400',
 		'support_size': '[120, 130, 160]'
 		}
 		self.config = ConfigParser.SafeConfigParser(defaulting)

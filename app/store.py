@@ -46,7 +46,9 @@ class ImSto:
 		
 		#print(im.format)
 		data = file.read()
-		ext = getImageType(data)
+		if (len(data) > int(config.get('max_file_size'))):
+			return [False, 'file: {} too big'.format(name)]
+		ext = getImageType(data[:32])
 		if ext is None:
 			return [False, 'invalid image file']
 		from hashlib import md5
