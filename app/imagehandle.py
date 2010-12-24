@@ -18,12 +18,7 @@ THUMB_PATH = config.get('thumb_path').rstrip('/')
 THUMB_ROOT = config.get('thumb_root').rstrip('/')
 SUPPORTED_SIZE = eval(config.get('support_size'))
 
-def not_found(environ, start_response):
-	"""Called if no URL matches."""
-	start_response('404 NOT FOUND', [('Content-Type', 'text/plain')])
-	#return [environ.get('SERVER_SOFTWARE')[:5]]
-	#
-	return ['Not Found']
+from _respond import not_found
 
 imsto = None
 
