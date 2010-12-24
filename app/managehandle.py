@@ -30,6 +30,8 @@ def manage(environ, start_response):
 		gallery = imsto.browse()
 		import datetime
 		dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
+		if hasattr(imsto, 'close'):
+			imsto.close()
 		return [json.dumps(gallery, default=dthandler)]
 	elif (action == 'Stored'):
 		return stored_process(environ, start_response)
