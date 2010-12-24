@@ -25,8 +25,9 @@ def not_found(environ, start_response):
 	#
 	return ['Not Found']
 
+imsto = None
 
-def image_handle_main(environ, start_response):
+def image_handle(environ, start_response):
 	"""main url process"""
 	path = environ.get('PATH_INFO', '')
 	image_url_regex = r'/([a-z0-9]{2})/([a-z0-9]{2})/([a-z0-9]{20,36})(-[sc]\d{2,4})?\.(gif|jpg|jpeg|png)$'
@@ -39,7 +40,7 @@ def image_handle_main(environ, start_response):
 		file = load_file(id)
 		if file is None:
 			return not_found(environ, start_response)
-		
+
 		org_path = '{0}/{1}/{2}.{4}'.format(*ids)
 		org_file = '{0}/{1}'.format(THUMB_ROOT, org_path)
 		if not os.path.exists(org_file):
@@ -59,26 +60,27 @@ def image_handle_main(environ, start_response):
 		#print(dst_file)
 		server_soft = environ.get('SERVER_SOFTWARE','')
 		if server_soft[:5] == 'nginx' and os.name != 'nt':
+			close()
 			start_response('200 OK', [('X-Accel-Redirect', '{0}/{1}'.format(THUMB_PATH, dst_path))])
 			return []
 		#print(file.type) 
 		headers = [('Content-Type', file.type), ('Content-Length', '{0.length}'.format(file)), ('Via','imsto')]
 		start_response('200 OK', headers)
 		# TODO: response file content
-		return [file.read()]
+		data = file.read()
+		close()
+		return [data]
 		
 	return not_found(environ, start_response)
 
-
 def load_file(id):
-	from pymongo import Connection
-	import gridfs
-	c = Connection(config.get('servers'))
-	db = c[config.get('db_name')]
-	fs = gridfs.GridFS(db,config.get('fs_prefix'))
-	if fs.exists(id):
-		return fs.get(id)
-	#return None
+	from store import ImSto
+	imsto = ImSto()
+	return imsto.get(id)
+
+def close():
+	if imsto is not None:
+		imsto.close()
 
 def save_file(file, filename):
 	import os
@@ -95,23 +97,10 @@ def save_file(file, filename):
 test log
 magickwand: 25M
 PIL: 12M
-
+shell: 11M
 """
 def thumb_image(filename, size_x, distname):
 	size = size_x, size_x
-	"""
-	#from PIL import Image
-	from magickwand.image import Image
-	#print(size)
-	#im = Image.open(filename)
-	im = Image(filename)
-	if im.size > size:
-		print('thumbnail {0} to: {1}'.format(filename, size_x))
-		#im.thumbnail(size, Image.ANTIALIAS)
-		im.thumbnail(size_x)
-	#im.save(distname, im.format)
-	im.save(distname)
-	"""
 	info = identify(filename)
 	if info is None:
 		return None
@@ -133,12 +122,12 @@ def identify(imagefile):
 
 if __name__ == '__main__':
 	from wsgiref.simple_server import make_server
-	httpd = make_server('', 8000, image_handle_main)
+	httpd = make_server('', 8000, image_handle)
 	print("Listening on port 8000....\n image url example: http://localhost:8000/aj/3f/1ow9y7ks8w8s888kswkg8.jpg")
 	httpd.serve_forever()
 
 	
 else:
 	from errorhandle import ErrorHandle
-	application = ErrorHandle(image_handle_main)
+	application = ErrorHandle(image_handle)
 	
