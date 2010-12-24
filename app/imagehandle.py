@@ -91,18 +91,45 @@ def save_file(file, filename):
 	finally:
 		fp.close()
 
+"""
+test log
+magickwand: 25M
+PIL: 12M
 
+"""
 def thumb_image(filename, size_x, distname):
-	from magickwand.image import Image
 	size = size_x, size_x
+	"""
+	#from PIL import Image
+	from magickwand.image import Image
 	#print(size)
+	#im = Image.open(filename)
 	im = Image(filename)
 	if im.size > size:
 		print('thumbnail {0} to: {1}'.format(filename, size_x))
+		#im.thumbnail(size, Image.ANTIALIAS)
 		im.thumbnail(size_x)
+	#im.save(distname, im.format)
 	im.save(distname)
-	
+	"""
+	info = identify(filename)
+	if info is None:
+		return None
+	if info['size'] > size:
+		print('thumbnail {0} to: {1}'.format(filename, size_x))
+		from subprocess import check_call
+		check_call(['convert','-thumbnail',str(size_x),filename,distname])
 
+def identify(imagefile):
+	from subprocess import check_output
+	try:
+		output = check_output(['identify', '-format', '%m %w %h %Q', imagefile])
+		info = output.split(' ')
+		return {'format': info[0], 'size': (int(info[1]), int(info[2])), 'quality': int(info[3])}
+	except CalledProcessError, e:
+		print (e)
+		return None
+	
 
 if __name__ == '__main__':
 	from wsgiref.simple_server import make_server

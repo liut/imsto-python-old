@@ -5,7 +5,8 @@ Requirements
 -----------
 
  * MongoDB (GridFS)
- * Python + [pymongo][pymongo] + [magckwand][magckwand]
+ * Python + [pymongo][pymongo]
+ * [ImageMagick][ImageMagick]
  * Nginx + [uWSGI][uWSGI]
 
 
@@ -47,5 +48,5 @@ TODO list
 - demo: <http://demo.imsto.org:81/>
 
 [pymongo]: http://pypi.python.org/pypi/pymongo/
-[magckwand]: http://pypi.python.org/pypi/magickwand/0.2
+[ImageMagick]: http://www.imagemagick.org/
 [uWSGI]: http://projects.unbit.it/uwsgi/

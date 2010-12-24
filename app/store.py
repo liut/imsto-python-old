@@ -63,7 +63,7 @@ class ImSto:
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
-		return [True, fs.put(data, _id=id, filename=filename, type=ctype,org_name=name), filename]
+		return [True, fs.put(data, _id=id, filename=filename, type=ctype,note=name), filename]
 		
 		
 	def get(self, id):
