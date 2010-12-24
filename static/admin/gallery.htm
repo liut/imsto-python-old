@@ -56,12 +56,13 @@
 					$("#image-list").empty();
 
 					$.each(data.items, function(i, item){//console.log(item);
-						var alt = (item.width && item.height) ? (item.width+'x'+item.height) : '';
+						var alt = (item.width && item.height) ? (item.width+'x'+item.height) : '', title = item.note ? item.note : '';
+						
 						if (item.created) {
-							alt += ' 上传时间: ' + item.created;
+							alt += '上传时间: ' + item.created;
 						}
 						var _li = $("<li></li>").attr("id", "li_iid" + item.id).appendTo("#image-list"), 
-							_a = $("<a></a>").attr("href", url_prefix + item.filename).attr("title", item.filename+" ("+alt+")"),
+							_a = $("<a></a>").attr("href", url_prefix + item.filename).attr("title", title+" ( "+alt+" )"),
 							_img = $("<img/>").attr("src", url_prefix + item.filename.replace(r_img_ext,f_img_replace)).attr('alt',alt).attr("class", ""),
 							_txt = $("<span></span>").attr("class", "lbl").attr("title",item.length).text(format_size(item.length)),
 							_btn = $("<span></span>").attr("class", "btn btn_delete ui-corner-all ui-icon ui-icon-trash").attr("title", "删除")
