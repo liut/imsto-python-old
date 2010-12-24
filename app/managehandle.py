@@ -18,7 +18,7 @@ def manage(environ, start_response):
 	
 	man_regex = r'^/([A-Za-z]+)/(env|Gallery|Stored)'
 	match = re.search(man_regex, path_info)
-	print('match: {0}'.format(match))
+	#print('match: {0}'.format(match))
 	if match is None:
 		return not_found(environ, start_response)
 	

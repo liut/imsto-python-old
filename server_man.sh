@@ -36,6 +36,12 @@ if [ -z "${uwsgi_BIN}" ]; then
 fi
 
 
+case `echo "testing\c"`,`echo -n testing` in
+    *c*,-n*) echo_n=   echo_c=     ;;
+    *c*,*)   echo_n=-n echo_c=     ;;
+    *)       echo_n=   echo_c='\c' ;;
+esac
+
 wait_for_pid () {
 	try=0
 
@@ -57,17 +63,18 @@ wait_for_pid () {
 			;;
 		esac
 
-		echo -n .
+		echo $echo_n ".$echo_c"
 		try=`expr $try + 1`
 		sleep 1
-
+		
 	done
 
 }
 
 case "$1" in
 	start)
-		echo -n "Starting ${name} "
+	
+		echo $echo_n "Starting ${name} $echo_c"
 
 		$uwsgi_BIN $uwsgi_opts
 
@@ -87,7 +94,7 @@ case "$1" in
 	;;
 
 	stop)
-		echo -n "Gracefully shutting down ${name} "
+		echo $echo_n "Gracefully shutting down ${name} $echo_c"
 
 		if [ ! -r $uwsgi_pidfile ] ; then
 			echo "warning, no pid file found - ${name} is not running ?"
@@ -107,7 +114,7 @@ case "$1" in
 	;;
 
 	force-quit)
-		echo -n "Terminating php-fpm "
+		echo $echo_n "Terminating ${name} "
 
 		if [ ! -r $uwsgi_pidfile ] ; then
 			echo "warning, no pid file found - ${name} is not running ?"

@@ -25,17 +25,18 @@ PYTHON_EGG_CACHE=${prefix}/cache/eggs
 uwsgi_BIN=`which uwsgi`
 uwsgi_pidfile="${prefix}/logs/${name}.pid"
 uwsgi_logfile="${prefix}/logs/${name}.log"
-uwsgi_flags="--pp ${prefix}/app --vacuum -C 666 -p 2 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
+uwsgi_flags="--pp ${prefix}/app -C 666 --vacuum -p 2 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
 uwsgi_uid="80"
 uwsgi_gid="80"
-uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} --uid ${uwsgi_uid} --gid ${uwsgi_gid} ${uwsgi_flags}"
-
+uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} ${uwsgi_flags}"
+# --uid ${uwsgi_uid} --gid ${uwsgi_gid}
 
 #echo "${uwsgi_BIN}"
 if [ -z "${uwsgi_BIN}" ]; then
 	echo "uwsgi not found or access denied"
 	exit 1;
 fi
+
 
 check_dirs () {
 	[ ! -d $CACHE_DIR -a ! -e $CACHE_DIR ] && mkdir $CACHE_DIR
@@ -51,6 +52,12 @@ check_dirs () {
 	fi
 	
 }
+
+case `echo "testing\c"`,`echo -n testing` in
+    *c*,-n*) echo_n=   echo_c=     ;;
+    *c*,*)   echo_n=-n echo_c=     ;;
+    *)       echo_n=   echo_c='\c' ;;
+esac
 
 wait_for_pid () {
 	try=0
@@ -73,7 +80,7 @@ wait_for_pid () {
 			;;
 		esac
 
-		echo -n .
+		echo $echo_n ".$echo_c"
 		try=`expr $try + 1`
 		sleep 1
 		
@@ -86,7 +93,7 @@ case "$1" in
 	
 		check_dirs
 	
-		echo -n "Starting ${name} "
+		echo $echo_n "Starting ${name} $echo_c"
 
 		$uwsgi_BIN $uwsgi_opts
 
@@ -106,7 +113,7 @@ case "$1" in
 	;;
 
 	stop)
-		echo -n "Gracefully shutting down ${name} "
+		echo $echo_n "Gracefully shutting down ${name} $echo_c"
 
 		if [ ! -r $uwsgi_pidfile ] ; then
 			echo "warning, no pid file found - ${name} is not running ?"
@@ -126,7 +133,7 @@ case "$1" in
 	;;
 
 	force-quit)
-		echo -n "Terminating php-fpm "
+		echo $echo_n "Terminating ${name} "
 
 		if [ ! -r $uwsgi_pidfile ] ; then
 			echo "warning, no pid file found - ${name} is not running ?"
