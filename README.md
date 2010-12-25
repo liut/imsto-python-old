@@ -32,9 +32,9 @@ Launch development
 * uwsgi: there have two socket service
 
 	 start image handle:
-		sudo ./server_image.sh start
+		./server_image.sh start
 	 start manage handle:
-		sudo ./server_man.sh start
+		./server_man.sh start
 
 * open url http://man.imsto.net/
 

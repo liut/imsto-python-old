@@ -23,11 +23,10 @@ PYTHON_EGG_CACHE=${prefix}/cache/eggs
 uwsgi_BIN=`which uwsgi`
 uwsgi_pidfile="${prefix}/logs/${name}.pid"
 uwsgi_logfile="${prefix}/logs/${name}.log"
-uwsgi_flags="--pp ${prefix}/app --vacuum -C 666 -p 1 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
-uwsgi_uid="80"
-uwsgi_gid="80"
-uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} --uid ${uwsgi_uid} --gid ${uwsgi_gid} ${uwsgi_flags}"
+uwsgi_flags="--pp ${prefix}/app --vacuum -C -p 1 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
 
+uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} ${uwsgi_flags}"
+# --uid ${uwsgi_uid} --gid ${uwsgi_gid}
 
 #echo "${uwsgi_BIN}"
 if [ -z "${uwsgi_BIN}" ]; then
@@ -140,7 +139,7 @@ case "$1" in
 
 	reload)
 
-		echo -n "Reload service ${name} "
+		echo $echo_n "Reload service ${name} $echo_c"
 
 		if [ ! -r $uwsgi_pidfile ] ; then
 			echo "warning, no pid file found - ${name} is not running ?"
