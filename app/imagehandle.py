@@ -103,6 +103,9 @@ def thumb_image(filename, size_x, distname):
 		print('thumbnail {0} to: {1}'.format(filename, size_x))
 		from subprocess import check_call
 		check_call(['convert','-thumbnail',str(size_x),filename,distname])
+	else:
+		from shutil import copyfile
+		copyfile(filename, distname)
 
 def identify(imagefile):
 	from subprocess import check_output
