@@ -4,7 +4,7 @@ imagehandle.py
 
 imsto: image handler
 rule: (path) aj/3f/1ow9y7ks8w8s888kswkg8.jpg => (_id) aj3f1ow9y7ks8w8s888kswkg8
-
+if/qp/ceq9shcskssskc888k4.jpg => ifqpceq9shcskssskc888k4
 Created by liut on 2010-12-04.
 Copyright (c) 2010 liut. All rights reserved.
 """
@@ -25,7 +25,7 @@ imsto = None
 def image_handle(environ, start_response):
 	"""main url process"""
 	path = environ.get('PATH_INFO', '')
-	image_url_regex = r'/([a-z0-9]{2})/([a-z0-9]{2})/([a-z0-9]{20,36})(-[sc]\d{2,4})?\.(gif|jpg|jpeg|png)$'
+	image_url_regex = r'/([a-z0-9]{2})/([a-z0-9]{2})/([a-z0-9]{19,36})(-[sc]\d{2,4})?\.(gif|jpg|jpeg|png)$'
 	match = re.search(image_url_regex, path)
 	#print(image_url_regex, path, match)
 	if match is not None:
