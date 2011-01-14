@@ -18,7 +18,7 @@ class Config():
 		'fs_prefix': 'img',
 		'thumb_path': '/thumb',
 		'thumb_root': '/opt/imsto/cache/thumb/',
-		'thumb_type': 'shell', # shell, wand, pil
+		'thumb_method': 'shell', # shell, wand, pil
 		'url_prefix': 'http://m.imsto.net/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
 		'max_file_size': '102400',
