@@ -42,7 +42,7 @@ def image_handle(environ, start_response):
 			save_file(file, org_file)
 		if ids[3] is None:
 			dst_path = org_path
-			#dst_file = org_file
+			dst_file = org_file
 		else:
 			dst_path = '{0}/{1}/{2}{3}.{4}'.format(*ids)
 			dst_file = '{0}/{1}'.format(THUMB_ROOT, dst_path)
@@ -59,12 +59,15 @@ def image_handle(environ, start_response):
 			start_response('200 OK', [('X-Accel-Redirect', '{0}/{1}'.format(THUMB_PATH, dst_path))])
 			return []
 		#print(file.type) 
-		headers = [('Content-Type', file.type), ('Content-Length', '{0.length}'.format(file)), ('Via','imsto')]
+		headers = [('Content-Type', str(file.type)), ('Content-Length', '{0.length}'.format(file)), ('Via','imsto')]
+		#print(headers)
 		start_response('200 OK', headers)
 		# TODO: response file content
-		data = file.read()
+		#data = file.read()
 		close()
-		return [data]
+		#return [data]
+		fd = open(dst_file,'r')
+		return environ['wsgi.file_wrapper'](fd, 4096)
 		
 	return not_found(environ, start_response)
 
@@ -94,9 +97,9 @@ magickwand: 25M
 PIL: 12M
 shell: 11M
 """
-def thumb_image(filename, size_x, distname):
+def thumbnail_shell(filename, size_x, distname):
 	size = size_x, size_x
-	info = identify(filename)
+	info = identify_shell(filename)
 	if info is None:
 		return None
 	if info['size'] > size:
@@ -107,7 +110,7 @@ def thumb_image(filename, size_x, distname):
 		from shutil import copyfile
 		copyfile(filename, distname)
 
-def identify(imagefile):
+def identify_shell(imagefile):
 	from subprocess import check_output
 	try:
 		output = check_output(['identify', '-format', '%m %w %h %Q', imagefile])
@@ -116,7 +119,33 @@ def identify(imagefile):
 	except CalledProcessError, e:
 		print (e)
 		return None
-	
+
+def thumbnail_wand(filename, size_x, distname):
+	size = size_x, size_x
+	from magickwand.image import Image
+	im = Image(filename)
+	if im.size > size:
+		im.thumbnail(size_x)
+	im.save(distname)
+	del im
+
+def thumbnail_pil(filename, size_x, distname):
+	size = size_x, size_x
+	from PIL import Image
+	im = Image.open(filename)
+	if im.size > size:
+		im.thumbnail(size, Image.ANTIALIAS)
+	im.save(distname, im.format)
+	del im
+
+def thumb_image(filename, size_x, distname):
+	tt = config.get('thumb_method')
+	if tt == 'shell':
+		return thumbnail_shell(filename, size_x, distname)
+	elif tt == 'wand':
+		return thumbnail_wand(filename, size_x, distname)
+	elif tt == 'pil':
+		return thumbnail_pil(filename, size_x, distname)
 
 if __name__ == '__main__':
 	from wsgiref.simple_server import make_server
