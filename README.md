@@ -6,7 +6,7 @@ Requirements
 
  * MongoDB (GridFS)
  * Python + [pymongo][pymongo]
- * [ImageMagick][ImageMagick]
+ * [ImageMagick][ImageMagick] or + magickwand or PIL
  * Nginx + [uWSGI][uWSGI]
 
 

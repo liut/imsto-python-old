@@ -20,7 +20,6 @@ SUPPORTED_SIZE = eval(config.get('support_size'))
 
 from _respond import not_found
 
-imsto = None
 
 def image_handle(environ, start_response):
 	"""main url process"""
@@ -32,8 +31,11 @@ def image_handle(environ, start_response):
 		ids = match.groups()
 		#print(ids)
 		id = '{0}{1}{2}'.format(*ids)
-		file = load_file(id)
+		from store import ImSto
+		imsto = ImSto()
+		file = imsto.get(id)
 		if file is None:
+			imsto.close()
 			return not_found(environ, start_response)
 
 		org_path = '{0}/{1}/{2}.{4}'.format(*ids)
@@ -50,12 +52,13 @@ def image_handle(environ, start_response):
 			size = int(ids[3][2:])
 			if size not in SUPPORTED_SIZE:
 				print('unsupported size: {0}'.format(size))
+				imsto.close()
 				return not_found(environ, start_response)
 			thumb_image(org_file, size, dst_file)
 		#print(dst_file)
 		server_soft = environ.get('SERVER_SOFTWARE','')
 		if server_soft[:5] == 'nginx' and os.name != 'nt':
-			close()
+			imsto.close()
 			start_response('200 OK', [('X-Accel-Redirect', '{0}/{1}'.format(THUMB_PATH, dst_path))])
 			return []
 		#print(file.type) 
@@ -64,21 +67,13 @@ def image_handle(environ, start_response):
 		start_response('200 OK', headers)
 		# TODO: response file content
 		#data = file.read()
-		close()
+		imsto.close()
 		#return [data]
 		fd = open(dst_file,'r')
 		return environ['wsgi.file_wrapper'](fd, 4096)
 		
 	return not_found(environ, start_response)
 
-def load_file(id):
-	from store import ImSto
-	imsto = ImSto()
-	return imsto.get(id)
-
-def close():
-	if imsto is not None:
-		imsto.close()
 
 def save_file(file, filename):
 	import os
