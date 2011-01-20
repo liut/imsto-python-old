@@ -6,8 +6,12 @@
 	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" title="no title" charset="utf-8">
 	<link rel="stylesheet" href="/css/base.css" type="text/css" media="screen" charset="utf-8">
 	<link rel="stylesheet" href="/css/images.css" type="text/css" media="screen" charset="utf-8">
+	<link rel="stylesheet" href="/css/colorbox.css" type="text/css" media="screen" charset="utf-8">
+	
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.8/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/colorbox/jquery.colorbox-min.js" type="text/javascript" charset="utf-8"></script>
+	
 	
 	<script type="text/javascript">
 	
@@ -62,7 +66,7 @@
 							alt += '上传时间: ' + item.created;
 						}
 						var _li = $("<li></li>").attr("id", "li_iid" + item.id).appendTo("#image-list"), 
-							_a = $("<a></a>").attr("href", url_prefix + item.filename).attr("title", title+" ( "+alt+" )"),
+							_a = $("<a></a>").attr("href", url_prefix + item.filename).attr("title", title+" ( "+alt+" )").attr('rel','box'),
 							_img = $("<img/>").attr("src", url_prefix + item.filename.replace(r_img_ext,f_img_replace)).attr('alt',alt).attr("class", ""),
 							_txt = $("<span></span>").attr("class", "lbl").attr("title",item.length).text(format_size(item.length)),
 							_btn = $("<span></span>").attr("class", "btn btn_delete ui-corner-all ui-icon ui-icon-trash").attr("title", "删除")
@@ -89,9 +93,11 @@
 								_btn.fadeOut();
 							});
 						}
-
+						
 					});
-
+					
+					// colorbox
+					$("#image-list a").colorbox();
 					
 				}, 'json');
 				}
