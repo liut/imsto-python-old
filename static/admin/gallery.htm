@@ -35,9 +35,9 @@
 			
 				var post_data = {source:'images', sort_name:'created', sort_order:'desc'};
 				var pageClick = function(page) {
-					arr = $("input:checked"); 
-					post_data.source = arr[0].value;
-					post_data.sort_order = arr[1].value;
+					//arr = $("input:checked"); 
+					//post_data.source = arr[0].value;
+					//post_data.sort_order = arr[1].value;
 					loadImages(page,post_data);
 				};
 				loadImages(1, post_data);
