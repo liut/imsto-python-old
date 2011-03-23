@@ -24,10 +24,20 @@ def manage(environ, start_response):
 	
 	action = match.groups()[1]
 	if (action == 'Gallery'):
+		from cgi import FieldStorage
+		form = FieldStorage(environ=environ)
+		limit = 20
+		start = 0
+		if form.has_key("page") and form["page"].value != "":
+			page = int(form["page"].value)
+			if page < 1:
+				page = 1
+			start = limit * (page - 1)
+		
 		start_response('200 OK', [('Content-type', 'text/plain')])
 		
 		imsto = ImSto()
-		gallery = imsto.browse()
+		gallery = imsto.browse(limit, start)
 		import datetime
 		dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
 		if hasattr(imsto, 'close'):

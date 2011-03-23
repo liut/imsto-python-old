@@ -20,7 +20,8 @@ class ImSto:
 	def browse(self, limit=20, start=0):
 		"""retrieve files from mongodb for gallery"""
 		#return getFs().list()
-		sort = [('updateDate',-1)]
+		from pymongo import ASCENDING, DESCENDING
+		sort = [('updateDate',DESCENDING)]
 		coll = self.getCollection()
 		cursor = coll.find(limit=limit,skip=start,sort=sort)
 		items = []
