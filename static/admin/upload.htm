@@ -9,64 +9,68 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/jquery.upload.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/jquery.imgupload.js" type="text/javascript" charset="utf-8"></script>
 
 	<script type="text/javascript">
 	//<![CDATA[
-		function handleFiles(files) {
-		    for (var i = 0; i < files.length; i++) {
-		        var file = files[i];
-				file.id = 'new_file';
-		        var imageType = /image.*/;
-
-		        if (!file.type.match(imageType)) continue;
-
-		        var img = document.createElement("img");
-		        //img.classList.add("obj");
-		        img.file = file;
-			   var li = $('<li />').addClass('new').append(img);	//alert(li.html());
-			   //li.append('<label class="lbl"><input class="new" title="描述" type="text" name="new_description[]" size="18" /></label>');
-			   li.append($('<span class="btn" />').addClass('btn ui-corner-all ui-icon ui-icon-trash').attr('title','delete').click(function(){$(this).parent().fadeOut(function(){$(this).remove();});return false;}));
-			   $("#image-pic-list").prepend(li);
-		        var reader = new FileReader();
-		        reader.onloadend = (function(img) {
-					return function(e) { img.src = e.target.result; $(img).attr('title',''+img.naturalWidth+'x'+img.naturalHeight+''); }; 
-				})(img);
-		        reader.readAsDataURL(file);
-		    }
-		}
-		
-		
-		var dropbox, preview, url_stored = "/Manage/Stored";
+		var dropbox, preview, message, url_stored = '/Manage/Stored';
 
 		$(document).ready(function(){
-				
+			
+			dropbox = $('#dropbox'), message = $('#message');
 
-				// init event
-				preview = document.getElementById("image-pic-list");
-				dropbox = document.getElementById("dropbox");
-				window.addEventListener("dragenter", function(e) {
-					e.preventDefault();
-					dropbox.setAttribute("dragenter", true);
-				}, true);
-				window.addEventListener("dragleave", function(e) {
-					dropbox.removeAttribute("dragenter");
-				}, true);
-				dropbox.addEventListener("dragover", function(e) {
-					e.preventDefault();
-				}, false);
-				dropbox.addEventListener("drop", function(e) {
-					e.preventDefault();
-					var dt = e.dataTransfer;
-					var files = dt.files;
+			function showMessage(msg){
+				message.text(message.text() + msg + "\n\n").show();
+			}
 
-					handleFiles(files);
-				}, false);
+			dropbox.imgdrop({
+				field_id: 'pic-input',
+				field_name:'new_file',
+				maxfiles: 9,
+				maxfilesize: 1024,
+				url: url_stored,
+				data: [{name: 'oper', value: 'add'}],
+				error: function(err, file) {
+					switch(err) {
+						case 'BrowserNotSupported':
+							Dust.alert('Your browser does not support HTML5 file uploads!');
+							break;
+						case 'TooManyFiles':
+							Dust.alert('Too many files! Please select 9 at most! (configurable)');
+							break;
+						case 'FileTooLarge':
+							Dust.alert(file.name+' is too large! Please upload files up to 2mb (configurable).');
+							break;
+						default:
+							Dust.alert('Not select files to upload');
+							break;
+					}
+				},
+				dragEnter: function() {
+					dropbox.attr('dragenter', true);
+				},
+				dragLeave: function() {
+					//log('leave');
+					dropbox.removeAttr('dragenter');
+				},
+				drop: function() {
+					//log('drop');
+					dropbox.removeAttr('dragenter');
+				},
+				createImage: function(img) {
+					//log(img);
+					var li = $('<li />').addClass('new').append(img);	//alert(li.html());
+					li.append('<label class="lbl"></label>');
+					li.append($('<span class="btn" />').addClass('btn ui-corner-all ui-icon ui-icon-trash').attr('title','delete').click(function(){$(this).parent().fadeOut(function(){$(this).remove();});return false;}));
+					$("#image-pic-list").prepend(li);
+				},
+				imageLoaded: function(img) {
+					$(img).parent().find('.lbl').text($(img).attr('title'));
+				}
+			});
 
 				$("#progressbar").progressbar().hide();
-				$("#pic-input").change(function(){
-					handleFiles(this.files);
-				});
+				
 				$("#image-pic-list").sortable({
 					//placeholder: 'ui-state-highlight',
 					update: function(event, ui) {
@@ -81,44 +85,92 @@
 					});
 					var params = [{name:'image_id', value:''},{name: 'act', value: 'image_store'}];//$(form).serializeArray();
 					var sorted = $("#image-pic-list").sortable( 'toArray' );
-					/*$.each(sorted, function(i, item){
+					$.each(sorted, function(i, item){
 						var res = item.match(/(.+)[-=_](.+)/);
 						if(res) params.push({name:'li[]',value:res[2]});
-					});*/
-					var files = [];
+					});
+					var files = [], imgs = [];
 					$("li.new").each(function(i, li){
-									var img = $("img", this).get(0);
-						if (typeof img.file !== "undefined") files.push(img.file);
+						var img = $("img", this).get(0);
+						if (typeof img.file !== "undefined") {
+							files.push(img.file);
+							imgs.push(img);
+						}
 					});
 					$("li input[type=text].changed").each(function(i,input){
 						params.push({name:input.name, value: input.value});
 					});
-				//	log(params);
+					log(params);
 					//alert('params: ' + dump(params));
 					//alert('files: ' + dump(files));
 					//$("#indicator").text('start process');
-					log('upload start');
+					log('upload start ', files.length);
 					if(files.length > 0) $("#progressbar").show();
-					$.upload(url_stored + '?oper=add', files, params, function(data){
-						//log(data);
-						alertAjaxResult(data, function(){
-							//alert('OK');
-							if (data === false || data[0] === false ) {
-								return;
+					if (files.length === 0) {
+						Dust.alert('New file not found, please select one or more files');
+						return false;
+					}
+					$.imgupload({
+						
+						url: url_stored,
+						files: files,
+						images: imgs,
+						uploadStarted: function(i, file, len){
+							// a file began uploading
+							// i = index => 0, 1, 2, 3, 4 etc
+							// file is the actual file of the index
+							// len = total files user dropped
+							log('start ' + i + ': ' + file.name)
+						},
+						uploadFinished: function(i, file, ret, time) {
+							// response is the data you got back from server in JSON format.
+							log('finished: ' + i + ': ' + file.name + ', ' + time + ' server responsed', ret);
+							if (typeof ret.success !== 'undefined') {
+								alertAjaxResult(ret);
+								return false;
 							}
-							location.reload();
-						});
-						//alert(dump(data));
-					},'json', function(percentage){
-						$("#progressbar").progressbar('value', percentage);
-						log(percentage);
-						//$("#indicator").text(''+percentage+'%');
-					}, function(){
-						$("#progressbar").progressbar('value', 100).fadeOut('slow');
-						//$("#indicator").text('OK');
-						log('OK');
-					});
+							if (ret === true || ret[0] === true) {
+								//log(imgs[i].parentNode)
+								$(imgs[i]).parent().removeClass('new');
+							} else {
+								showMessage('第' + (i+1) + '张图 ' + file.name + ' 错误: ' + ret[1] + "\ncode: " + ret[0]);
+								return false;
+							}
+						},
+						progressUpdated: function(i, file, progress) {
+							// this function is used for large files and updates intermittently
+							// progress is the integer value of file being uploaded percentage to completion
+							log('progress: ' + i + ': ' + progress);
+						},
+						speedUpdated: function(i, file, speed) {
+							// speed in kb/s
+							log('speed: ' + i + ': ' + speed);
+						},
+						beforeEach: function(file) {
+							// file is a file object
+							// return false to cancel upload
+							
+							if(!file.type.match(/^image\//)){
+								alert('Only images are allowed!');
 
+								// Returning false will cause the
+								// file to be rejected
+								return false;
+							}
+						},
+						afterAll: function() {
+							// runs after all files have been uploaded or otherwise dealt with
+							log('all done!');
+							/*Dust.alert('all done!', function(){
+								// TODO: refresh page?
+								setTimeout(function(){
+									message.fadeOut(900).text('').hide();
+								}, 6000);
+								
+							});*/
+						}
+					});
+					
 					return false;
 				});
 
@@ -138,15 +190,17 @@
 
 	<div class=" ui-widget-content ui-corner-all">
 		<div class="nav"><a class="button" href="gallery.htm">Return to list</a></div>
+
+			<form action="/Manage/Stored" method="post" id="image_images_form" name="image_images_form" enctype="multipart/form-data">
+				<input type="hidden" name="oper" value="add" />
+
 			<div class="box">
-				<label>select one or more pictures<input type="file" multiple="" id="pic-input" /><a href="javascript:void(0);" id="clear">clear</a></label>
+				<label>select one or more pictures<input type="file" multiple="" name="new_file" id="pic-input" /><a href="javascript:void(0);" id="clear">clear</a></label>
 				<svg xmlns="http://www.w3.org/2000/svg" width="300" height="150" viewBox="-10 -10 410 210" id="dropbox">
 	                    <path d="M 0 0 L 400 0 L 400 140 L 260 140 L 200 190 L 140 140 L 0 140 Z"/>
 	                    &nbsp;&nbsp;<text x="50%" y="35%">or drag pictures to here</text>
 	                </svg>
 			</div>
-
-			<form action="/Manage/Stored" method="post" id="image_images_form" name="image_images_form" enctype="multipart/form-data">
 
 				<ul id="image-pic-list" class="pic-list">
 				</ul>
@@ -155,11 +209,14 @@
 					<input class="btn" type="submit" value="save all"/>
 					<div class="btn" id="progressbar"></div>
 				</div>
-				<!-- 
+				
+			<br/>
+			<br/>
 				<div>
-					<div id="logs">status: </div>
+					<div id="message"> </div>
 				</div>
-			 -->
+			<br/>
+			<br/>
 			</form>
 	</div>
 

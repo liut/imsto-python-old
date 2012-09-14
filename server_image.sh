@@ -159,7 +159,7 @@ case "$1" in
 
 	reload)
 
-		echo -n "Reload service ${name} "
+		echo $echo_n "Reload service ${name} "
 
 		if [ ! -r $uwsgi_pidfile ] ; then
 			echo "warning, no pid file found - ${name} is not running ?"

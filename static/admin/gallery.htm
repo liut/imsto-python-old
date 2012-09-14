@@ -13,6 +13,7 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.8/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/jquery.colorbox-min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/jquery.pager.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
 	
 	
 	<script type="text/javascript">
@@ -33,6 +34,7 @@
 	var allow_delete = true, url_stored = "/Manage/Stored";;
 		$(document).ready(function(){
 			
+				var page_size = 20;
 				var post_data = {source:'images', sort_name:'created', sort_order:'desc'};
 				var pageClick = function(page) {
 					//arr = $("input:checked"); 
@@ -45,12 +47,12 @@
 			function loadImages(page, post_data) {
 				$("#rsp-status").html('loading...');
 				var r_img_ext = /\.(jpg|png|gif)$/, f_img_replace = function(s,ext){return "-s160."+ext;};
-				$.get('/Manage/Gallery?source='+post_data.source+'&page='+page+'&sort_name='+post_data.sort_name+'&sort_order='+post_data.sort_order, function(data){
+				$.get('/Manage/Gallery?source='+post_data.source+'&page='+page+'&rows='+page_size+'&sort_name='+post_data.sort_name+'&sort_order='+post_data.sort_order, function(data){
 					//log(data);
 					if (!$.isArray(data.items) || data.items.length == 0) {
 						return false;
 					}
-					var page_count = Math.round(data.total/10); //log(page_count);
+					var page_count = Math.round(data.total/page_size); //log(page_count);
 					if (page_count > 1) {
 						$("#pager").pager({ pagenumber: page, pagecount: page_count, buttonClickCallback: pageClick });
 					} else {

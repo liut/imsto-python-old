@@ -58,9 +58,16 @@ def manage(environ, start_response):
 
 def stored_process(environ, start_response):
 	from cgi import FieldStorage
-	form = FieldStorage(environ=environ)
-	#print(form.keys())
+	import cgitb; cgitb.enable(display=0, logdir="/tmp")
+	form = FieldStorage(fp=environ['wsgi.input'], environ=environ)
+	print(form.keys())
+
 	start_response('200 Ok', [('Content-type', 'text/javascript')])
+
+	if "oper" not in form:
+		#print("Bad Request")
+		return [json.dumps([False, 'Bad Request'])]
+
 	method = environ['REQUEST_METHOD'].upper()
 	if method == 'GET' or method == 'HEAD':
 		return [json.dumps([False, 'bad request'])]
@@ -72,6 +79,10 @@ def stored_process(environ, start_response):
 		id = form['id']
 		return [json.dumps(imsto.delete(id.value))]
 	if oper.value == 'add':
+
+		if "new_file" not in form:
+			return [json.dumps([False, 'please select a file'])]
+
 		new_file = form['new_file']
 		if new_file is None:
 			return [json.dumps([False, 'invalid upload field'])]

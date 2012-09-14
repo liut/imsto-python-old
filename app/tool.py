@@ -19,7 +19,7 @@ Options:
   -i, --import     Import file to storeage
   -q, --id        get a file by id
   -l, --list       List files
-  -l, --list       test a file
+  -t, --test       test a file
   -h, --help       Show this message
   -v, --verbose    Verbose output
   -q, --quiet      Minimal output
@@ -46,10 +46,17 @@ def main(argv=None):
 		#print(args)
 		action = None
 		store_file = None
+		limit = 5
+		start = 0
 		# option processing
 		for option, value in opts:
 			if option == "-v":
 				verbose = True
+			if option == "--limit":
+				limit = int(value)
+			if option == "--start":
+				start = int(value)
+
 			if option in ("-h", "--help"):
 				raise Usage(help_message)
 			if option in ("-i", "--import"):
@@ -70,7 +77,7 @@ def main(argv=None):
 		print('action: {}'.format(action))
 		if (action == 'list'):
 			imsto = ImSto()
-			gallery = imsto.browse()
+			gallery = imsto.browse(limit, start)
 			for img in gallery['items']:
 				#print(img)
 				print("{0[filename]}\t{0[length]:8,d}".format(img))
