@@ -15,6 +15,8 @@
 	//<![CDATA[
 		var dropbox, preview, message, url_stored = '/Manage/Stored';
 
+		if (Dust) {Dust.dev = true;};
+
 		$(document).ready(function(){
 			
 			dropbox = $('#dropbox'), message = $('#message');
@@ -132,6 +134,7 @@
 							if (ret === true || ret[0] === true) {
 								//log(imgs[i].parentNode)
 								$(imgs[i]).parent().removeClass('new');
+								showMessage('Upload OK: ' + file.name);
 							} else {
 								showMessage('第' + (i+1) + '张图 ' + file.name + ' 错误: ' + ret[1] + "\ncode: " + ret[0]);
 								return false;
@@ -213,7 +216,7 @@
 			<br/>
 			<br/>
 				<div>
-					<div id="message"> </div>
+					<pre id="message"> </pre>
 				</div>
 			<br/>
 			<br/>

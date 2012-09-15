@@ -99,7 +99,7 @@ def stored_process(environ, start_response):
 			print('single file %r %r' % (f.name, f.filename))
 			id = imsto.store(f.file, ctype=f.type, name=f.filename)
 			print('new_id: %r' % id)
-			result.append(id)
+			result = id
 		if hasattr(imsto, 'close'):
 			imsto.close()
 		

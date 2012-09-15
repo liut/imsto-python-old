@@ -55,7 +55,7 @@ class ImSto:
 		fs = self.getFs()
 		if fs.exists(id) or fs.exists(md5=hashed):
 			print ('id {} or hash {} exists!!'.format(id, hashed))
-			return [False, 'exists']
+			return [False, 'already exists']
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
