@@ -5,7 +5,7 @@ Requirements
 -----------
 
  * MongoDB (GridFS)
- * Python + [pymongo][pymongo]
+ * Python 2.7 + [pymongo][pymongo]
  * [ImageMagick][ImageMagick] or + magickwand or PIL
  * Nginx + [uWSGI][uWSGI]
 
@@ -32,20 +32,24 @@ Launch development
 * uwsgi: there have two socket service
 
 	 start image handle:
-		./server_image.sh start
+		`./server_image.sh start`
+	
 	 start manage handle:
-		./server_man.sh start
+		`./server_man.sh start`
 
 * open url http://man.imsto.net/
+
+
+
 
 TODO list
 ---------
 
-- store tool (closed 60%)
+- store tool (closed 70%)
 - <del>(web) gallery manager</del>
 - <del>(web) image upload</del>
 - permisions
-- demo: <http://demo.imsto.org:81/>
+- demo: <http://demo.imsto.org/>
 
 [pymongo]: http://pypi.python.org/pypi/pymongo/
 [ImageMagick]: http://www.imagemagick.org/
