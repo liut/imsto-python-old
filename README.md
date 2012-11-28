@@ -6,7 +6,7 @@ Requirements
 
  * MongoDB (GridFS)
  * Python 2.7 + [pymongo][pymongo]
- * [ImageMagick][ImageMagick] or + magickwand or PIL
+ * [ImageMagick][ImageMagick] or PIL
  * Nginx + [uWSGI][uWSGI]
 
 
@@ -49,8 +49,9 @@ TODO list
 - <del>(web) gallery manager</del>
 - <del>(web) image upload</del>
 - permisions
-- demo: <http://demo.imsto.org/>
+- demo: [demo]
 
 [pymongo]: http://pypi.python.org/pypi/pymongo/
 [ImageMagick]: http://www.imagemagick.org/
 [uWSGI]: http://projects.unbit.it/uwsgi/
+[demo]: http://demo.imsto.org/

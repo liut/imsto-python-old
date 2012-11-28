@@ -19,6 +19,7 @@ THUMB_ROOT = config.get('thumb_root').rstrip('/')
 SUPPORTED_SIZE = eval(config.get('support_size'))
 
 from _respond import not_found
+from _wand import *
 
 
 def image_handle(environ, start_response):
@@ -115,14 +116,38 @@ def identify_shell(imagefile):
 		print (e)
 		return None
 
+def identify_wand(imagefile):
+	magick_wand = NewMagickWand()
+	if not MagickReadImage(magick_wand, imagefile):
+		return False
+	format = MagickGetImageFormat(magick_wand)
+	return {
+		'format': MagickGetImageFormat(magick_wand),
+		'mime': MagickToMime(format),
+		'size': (MagickGetImageWidth(magick_wand), MagickGetImageHeight(magick_wand)),
+		'quality': MagickGetImageCompressionQuality(magick_wand)
+	}
+
 def thumbnail_wand(filename, size_x, distname):
 	size = size_x, size_x
-	from magickwand.image import Image
-	im = Image(filename)
-	if im.size > size:
-		im.thumbnail(size_x)
-	im.save(distname)
-	del im
+	ret = False
+	magick_wand = NewMagickWand()
+	if not MagickReadImage(magick_wand, filename):
+		return False
+	im_size = MagickGetImageWidth(magick_wand), MagickGetImageHeight(magick_wand)
+	if im_size > size:
+		if MagickThumbnailImage(magick_wand, size_x, size_x):
+			print("thumbnail OK")
+			if MagickWriteImage(magick_wand, distname):
+				print("Save thumbnail OK")
+				ret = True
+	else:
+		if MagickStripImage(magick_wand):
+			if MagickWriteImage(magick_wand, distname):
+				print("Save striped OK")
+				ret = True
+	DestroyMagickWand(magick_wand)
+	return ret
 
 def thumbnail_pil(filename, size_x, distname):
 	size = size_x, size_x
