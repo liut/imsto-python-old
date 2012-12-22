@@ -12,7 +12,7 @@
 
 name="images"
 uwsgi_module="imagehandle"
-uwsgi_socket="/tmp/imsto_img.sock"
+#uwsgi_socket="/tmp/imsto_img.sock"
 
 prefix=/opt/imsto
 #exec_prefix=${prefix}
@@ -24,12 +24,13 @@ PYTHON_EGG_CACHE=${prefix}/cache/eggs
 
 uwsgi_BIN=`which uwsgi`
 uwsgi_pidfile="${prefix}/logs/${name}.pid"
-uwsgi_logfile="${prefix}/logs/${name}.log"
-uwsgi_flags="--pp ${prefix}/app -C --vacuum -p 2 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
+#uwsgi_logfile="${prefix}/logs/${name}.log"
+#uwsgi_flags="--pp ${prefix}/app -C --vacuum -p 2 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
 uwsgi_uid="80"
 uwsgi_gid="80"
-uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} ${uwsgi_flags}"
+#uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} ${uwsgi_flags}"
 # --uid ${uwsgi_uid} --gid ${uwsgi_gid}
+uwsgi_opts="--ini ${prefix}/config/uwsgi/dev.ini:app_img --pidfile ${uwsgi_pidfile}"
 
 #echo "${uwsgi_BIN}"
 if [ -z "${uwsgi_BIN}" ]; then
@@ -120,7 +121,8 @@ case "$1" in
 			exit 1
 		fi
 
-		kill -QUIT `cat $uwsgi_pidfile`
+		#kill -QUIT `cat $uwsgi_pidfile`
+		$uwsgi_BIN --stop $uwsgi_pidfile
 
 		wait_for_pid removed $uwsgi_pidfile
 
@@ -166,7 +168,8 @@ case "$1" in
 			exit 1
 		fi
 
-		kill -TERM `cat $uwsgi_pidfile`
+		#kill -TERM `cat $uwsgi_pidfile`
+		$uwsgi_BIN --reload $uwsgi_pidfile
 
 		echo " done"
 	;;

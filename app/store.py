@@ -14,8 +14,9 @@ config = _config.Config()
 
 class ImSto:
 	db = None
-	def __init__(self):
-		pass
+	def __init__(self, engine='default'):
+		"""engine: mongodb(default), s3"""
+		self.engine = engine
 		
 	def browse(self, limit=20, start=0):
 		"""retrieve files from mongodb for gallery"""
@@ -52,6 +53,8 @@ class ImSto:
 		print ('md5 hash: {}'.format(hashed))
 		id = self.makeId(hashed)
 		print ('id: {}'.format(id))
+
+		# TODO: fix for support s3 front browse
 		fs = self.getFs()
 		if fs.exists(id) or fs.exists(md5=hashed):
 			print ('id {} or hash {} exists!!'.format(id, hashed))
@@ -94,6 +97,8 @@ class ImSto:
 		return newItem
 
 	def getFs(self):
+		if self.engine == 's3':
+			raise EngineError('s3 not need Fs')
 		import gridfs
 		if self.db is None:
 			self.db = self.getDb()
@@ -107,13 +112,19 @@ class ImSto:
 	def getCollection(self):
 		if self.db is None:
 			self.db = self.getDb()
-		cn = '{0}.files'.format(config.get('fs_prefix'))
+		cn = '{0}.files'.format('s3' if self.engine=='s3' else config.get('fs_prefix'))
 		return self.db[cn]
 
 	def close(self):
 		""" close db connection"""
 		if self.db is not None:
 			self.db.connection.disconnect()
+
+class EngineError(Exception):
+	def __init__(self, message, **kwds):
+		self.args = message, kwds.copy()
+		self.msg, self.extra = self.args
+
 
 
 sig_gif = b'GIF'

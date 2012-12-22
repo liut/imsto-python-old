@@ -3,10 +3,10 @@ def abuilding(self, environ, start_response):
 	start_response('200 OK', [('Content-type', 'text/plain')])
 	return ['Abuilding']
 
-def not_found(environ, start_response):
+def not_found(environ, start_response, message = 'Not Found'):
 	"""Called if no URL matches."""
 	start_response('404 NOT FOUND', [('Content-Type', 'text/plain')])
-	return ['Not Found']
+	return [message]
 
 def print_env(environ, start_response):
 	"""list environ items"""

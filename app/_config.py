@@ -26,11 +26,15 @@ class Config():
 		}
 		self.config = ConfigParser.SafeConfigParser(defaulting)
 		ini_file = os.path.join(os.path.dirname(__file__), '../config/imsto.ini')
-		self.config.read(ini_file)
+		ret = self.config.read(ini_file)
+		if len(ret) == 0:
+			print('Error: imsto.ini not found or read error')
+		
 		if os.environ.has_key('PYTHON_EGG_CACHE') and not (os.environ['PYTHON_EGG_CACHE'] is None):
 			pass
 		else:
-			os.environ['PYTHON_EGG_CACHE'] = self.get('eggs_cache')
+			pass
+			#os.environ['PYTHON_EGG_CACHE'] = self.get('eggs_cache')
 	
 	def get(self, name):
 		"""docstring for get"""
@@ -39,4 +43,5 @@ class Config():
 
 if __name__ == '__main__':
 	config = Config()
+	print(config.config.sections())
 	print(config.get('servers'))
