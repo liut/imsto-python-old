@@ -6,7 +6,19 @@ Created by liut on 2010-12-04.
 Copyright (c) 2010-2012 liut. All rights reserved.
 """
 
-from _wand import *
+import ctypes
+from _wand import (NewMagickWand,DestroyMagickWand,CloneMagickWand,ClearMagickWand,
+MagickReadImageBlob,MagickReadImage,MagickWriteImage,MagickGetImageBlob,
+MagickGetImageFormat,MagickSetImageFormat,MagickGetImageWidth,MagickGetImageHeight,
+MagickGetImageCompressionQuality,MagickSetImageCompressionQuality,
+MagickScaleImage,MagickRelinquishMemory,MagickStripImage,MagickThumbnailImage,MagickCropImage,MagickSetImagePage,
+MagickSetImageArtifact,
+DissolveCompositeOp,
+MagickCompositeImage,
+MagickGetException,MagickClearException,
+)
+import warnings
+
 
 class SimpImage(object):
 	_max_width, _max_height = 0, 0
@@ -14,7 +26,8 @@ class SimpImage(object):
 	"""docstring for ClassName"""
 	def __init__(self, image = None):
 		self._wand = NewMagickWand()
-		if image is not None: self.read( image)
+		if image is not None:
+			self.read( image)
 
 	def __del__(self):
 		if self._wand:
@@ -22,7 +35,10 @@ class SimpImage(object):
 
 
 	def __copy__( self ):
-		c = Image()
+		return self.clone()
+
+	def clone( self ):
+		c = SimpImage()
 		if self._wand:
 			c._wand = CloneMagickWand( self._wand )
 		return c
@@ -41,6 +57,10 @@ class SimpImage(object):
 		else:
 			MagickReadImage( self._wand, image )
 
+
+	@property
+	def wand(self):
+		return self._wand
 
 	@property
 	def format( self ):
@@ -105,16 +125,19 @@ class SimpImage(object):
 			size = size_t()
 			b = MagickGetImageBlob( self._wand, size )
 			try:
-				file.write( ''.join( [chr( b[i] ) for i in range( 0, size.value + 1 )] ) )
+				return file.write( ''.join( [chr( b[i] ) for i in range( 0, size.value + 1 )] ) )
 			finally:
 				MagickRelinquishMemory( b )
 		else:
-			MagickWriteImage( self._wand, file )
+			r = MagickWriteImage( self._wand, file )
+
+			if not r:
+				self.error()
 
 
 	def thumbnail( self, columns, rows = None, fit = True, max_width = 0, max_height = 0 ):
 		if rows is None: rows = columns
-		print "columns: {}, rows: {}, max_width: {}, max_height: {}".format(columns, rows, max_width, max_height)
+		print "thumbnail columns: {}, rows: {}, max_width: {}, max_height: {}".format(columns, rows, max_width, max_height)
 
 		org_width, org_height = self.size
 
@@ -135,8 +158,14 @@ class SimpImage(object):
 				bounds = float( columns ) / float( rows )
 				if rel >= bounds: rows = int( columns / rel )
 				else: columns = int( rows * rel )
-			print "columns: {}, rows: {}".format(columns, rows)
-		return MagickThumbnailImage( self._wand, columns, rows )
+			print "fit columns: {}, rows: {}".format(columns, rows)
+		if not MagickThumbnailImage( self._wand, columns, rows ):
+			print('error: MagickThumbnailImage')
+
+			self.error()
+			
+			return False
+		return True
 
 
 	def cropThumbnail( self, dst_width, dst_height = None ):
@@ -160,6 +189,7 @@ class SimpImage(object):
 			new_width  = int(ratio_y * float( org_width ))
 		
 		if not MagickThumbnailImage(self._wand, new_width, new_height):
+			print('error: MagickThumbnailImage')
 			return False
 
 		if new_width == dst_width and new_height == dst_height:
@@ -171,9 +201,51 @@ class SimpImage(object):
 		print "crop_x: {0}, crop_y: {1}".format(crop_x, crop_y)
 
 		if not MagickCropImage(self._wand, dst_width, dst_height, crop_x, crop_y):
+			print('error: MagickCropImage')
 			return False
 		
-		MagickSetImagePage(self._wand, dst_width, dst_height, 0, 0);
+		r = MagickSetImagePage(self._wand, dst_width, dst_height, 0, 0);
+
+		if not r:
+			self.error()
+		
 		return True
 
+	def watermark(self, image, transparency=0.0, left=0, top=0, position=None):
+		watermark_image = image.clone()
+		s_width, s_height = self.size
+		w_width, w_height = watermark_image.size
 
+		if position == 'bottom-right':
+			left = s_width - w_width - 10
+			top = s_height - w_height - 10
+		elif position == 'top-left':
+			left = top = 10
+		elif position == 'top-right':
+			left = s_width - w_width - 10
+			top = 10
+		elif position == 'bottom-left':
+			left = 10
+			top = s_height - w_height - 10
+
+		MagickSetImageArtifact(watermark_image.wand,"compose:args", "70%")
+		op = DissolveCompositeOp
+		r = MagickCompositeImage(self.wand, watermark_image.wand, op, int(left), int(top))
+
+		if not r:
+			self.error()
+
+		return r
+
+
+	def error(self, stacklevel=1):
+		severity = ctypes.c_int()
+		desc = MagickGetException(self.wand, ctypes.byref(severity))
+		print severity
+		print desc
+		MagickClearException(self.wand)
+		# TODO: process exception or warning
+		#if isinstance(e, Warning):
+		#	warnings.warn(e, stacklevel=stacklevel + 1)
+		#elif isinstance(e, Exception):
+		#	raise e

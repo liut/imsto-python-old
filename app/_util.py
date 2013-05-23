@@ -10,17 +10,28 @@ import os
 import _config
 config = _config.Config()
 
-from _wand import *
+from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
+MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
 
-def save_file(file, filename):
+def check_dirs(filename):
 	dir_name = os.path.dirname(filename)
 	if not os.path.exists(dir_name):
 		os.makedirs(dir_name, 0777)
+
+def save_file(file, filename):
+	check_dirs(filename)
 	fp = open(filename, 'wb')
 	try:
 		fp.write(file.read())
+	except Exception, e:
+		print('save file {} failed, error: {}'.format(filename, e))
 	finally:
 		fp.close()
+
+	statinfo = os.stat(filename)
+	if statinfo.st_size == 0:
+		print('file size is zero, remove it')
+		os.remove(filename)
 
 """
 test log
@@ -67,19 +78,19 @@ def identify_wand(imagefile):
 
 	return info
 
-def thumbnail_wand(filename, size_1, distname, mode='s'):
+def thumbnail_wand(filename, width, height, distname, mode='s'):
 	from image import SimpImage
 	im = SimpImage(filename)
 	if mode == 'c':
-		ret = im.cropThumbnail(size_1, size_1)
+		ret = im.cropThumbnail(width, height)
 	elif mode == 'w':
-		ret = im.thumbnail(size_1, max_width=size_1)
+		ret = im.thumbnail(width, max_width=width)
 	elif mode == 'h':
-		ret = im.thumbnail(size_1, max_height=size_1)
+		ret = im.thumbnail(width, max_height=width)
 	else:
-		ret = im.thumbnail(size_1)
+		ret = im.thumbnail(width, height)
 
-	print "thumbnail {} result: {}".format(size_1, ret)
+	print "thumbnail {} {}x{} result: {}".format(mode, width, height, ret)
 	if ret:
 		ret = im.save(distname)
 	del im
@@ -97,15 +108,16 @@ def thumbnail_pil(filename, size_1, distname):
 	im.save(distname, im.format)
 	del im
 
-def thumb_image(filename, size_1, distname, mode='s'):
+def thumb_image(filename, width, height, distname, mode='s'):
 	tt = config.get('thumb_method')
 	#print('thumb_method: {0}'.format(tt))
+	check_dirs(distname)
 	if tt == 'shell':
-		return thumbnail_shell(filename, size_1, distname)
+		return thumbnail_shell(filename, width, distname)
 	elif tt == 'wand':
-		return thumbnail_wand(filename, size_1, distname, mode=mode)
+		return thumbnail_wand(filename, width, height, distname, mode=mode)
 	elif tt == 'pil':
-		return thumbnail_pil(filename, size_1, distname)
+		return thumbnail_pil(filename, width, distname)
 
 
 
@@ -123,3 +135,22 @@ def guess_mimetype(fn, default="application/octet-stream"):
 	bfn, ext = fn.lower().rsplit(".", 1)
 	if ext == "jpg": ext = "jpeg"
 	return mimetypes.guess_type(bfn + "." + ext)[0] or default
+
+def watermark_image(filename, distname):
+	from image import SimpImage
+	im = SimpImage(filename)
+	im_w = SimpImage(os.path.join(os.path.dirname(__file__), '../config/watermark.png'))
+	#print im_w.wand
+	check_dirs(distname)
+	if im.watermark(im_w, 0.5, position='bottom-right'):
+		print 'watermark ok'
+		return im.save(distname)
+
+	print 'error watermark'
+	return None
+
+
+
+
+
+

@@ -14,9 +14,16 @@ config = _config.Config()
 
 class ImSto:
 	db = None
-	def __init__(self, engine='default'):
+	engine = None
+	def __init__(self, section='imsto'):
 		"""engine: mongodb(default), s3"""
-		self.engine = engine
+		self.section = section
+		self.engine = self.get_config('engine')
+		self.fs_prefix = self.get_config('fs_prefix')
+		print 'section: {self.section}, engine: {self.engine}, fs_prefix: {self.fs_prefix}'.format(self=self)
+
+	def get_config(self, key):
+		return config.get(key, self.section)
 		
 	def browse(self, limit=20, start=0):
 		"""retrieve files from mongodb for gallery"""
@@ -28,7 +35,7 @@ class ImSto:
 		items = []
 		for item in cursor:
 			items.append(self.makeItem(item))
-		return {'items':items,'total':cursor.count(),'url_prefix': config.get('url_prefix')}
+		return {'items':items,'total':cursor.count(),'url_prefix': self.get_config('url_prefix')}
 		
 	def store(self, file, ctype, name):
 		"""save a file to mongodb"""
@@ -43,7 +50,7 @@ class ImSto:
 		
 		#print(im.format)
 		data = file.read()
-		if (len(data) > int(config.get('max_file_size'))):
+		if (len(data) > int(self.get_config('max_file_size'))):
 			return [False, 'file: {} too big'.format(name)]
 		ext = getImageType(data[:32])
 		if ext is None:
@@ -62,7 +69,7 @@ class ImSto:
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
-		return [True, fs.put(data, _id=id, filename=filename, type=ctype,note=name), filename]
+		return [True, fs.put(data, _id=id, filename=filename, content_type=ctype,note=name), filename]
 		
 		
 	def get(self, id):
@@ -102,17 +109,17 @@ class ImSto:
 		import gridfs
 		if self.db is None:
 			self.db = self.getDb()
-		return gridfs.GridFS(self.db,config.get('fs_prefix'))
+		return gridfs.GridFS(self.db,self.fs_prefix)
 
 	def getDb(self):
 		from pymongo import Connection
-		c = Connection(config.get('servers'))
-		return c[config.get('db_name')]
+		c = Connection(self.get_config('servers'))
+		return c[self.get_config('db_name')]
 
 	def getCollection(self):
 		if self.db is None:
 			self.db = self.getDb()
-		cn = '{0}.files'.format('s3' if self.engine=='s3' else config.get('fs_prefix'))
+		cn = '{0}.files'.format('s3' if self.engine=='s3' else self.fs_prefix)
 		return self.db[cn]
 
 	def close(self):

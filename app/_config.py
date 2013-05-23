@@ -22,7 +22,7 @@ class Config():
 		'url_prefix': 'http://m.imsto.net/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
 		'max_file_size': '102400',
-		'support_size': '[120, 130, 160]'
+		'support_size': '120,160,250,400'
 		}
 		self.config = ConfigParser.SafeConfigParser(defaulting)
 		ini_file = os.path.join(os.path.dirname(__file__), '../config/imsto.ini')
@@ -36,12 +36,26 @@ class Config():
 			pass
 			#os.environ['PYTHON_EGG_CACHE'] = self.get('eggs_cache')
 	
-	def get(self, name):
+	def get(self, name, section='imsto'):
 		"""docstring for get"""
-		section = 'imsto'
-		return self.config.get(section, name)
+		val = None
+		if section != 'imsto':
+			try:
+				val = self.config.get(section, name)
+			except Exception, e:
+				#raise e
+				print e
+				pass
+		
+		if val is None:
+			val = self.config.get('imsto', name)
+
+		return val
+
 
 if __name__ == '__main__':
 	config = Config()
 	print(config.config.sections())
 	print(config.get('servers'))
+	print config.get('thumb_root')
+	print config.get('thumb_root', 'avatar')
