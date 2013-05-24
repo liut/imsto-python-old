@@ -6,6 +6,8 @@ Created by liut on 2010-12-15.
 Copyright (c) 2010 liut. All rights reserved.
 """
 
+__all__ = ['Config']
+
 import ConfigParser,os
 
 class Config():
@@ -14,6 +16,7 @@ class Config():
 		
 		defaulting = {
 		'servers': 'localhost',
+		'engine': 'mongodb',
 		'db_name': 'storage',
 		'fs_prefix': 'img',
 		'thumb_path': '/thumb',
@@ -25,7 +28,12 @@ class Config():
 		'support_size': '120,160,250,400'
 		}
 		self.config = ConfigParser.SafeConfigParser(defaulting)
-		ini_file = os.path.join(os.path.dirname(__file__), '../config/imsto.ini')
+		if os.environ.has_key('IMSTO_SETTINGS_ROOT'):
+			ini_file = os.path.join(os.environ['IMSTO_SETTINGS_ROOT'], 'imsto.ini')
+		else:
+			ini_file = os.path.join(os.path.dirname(__file__), '../config/imsto.ini')
+		#print ini_file
+
 		ret = self.config.read(ini_file)
 		if len(ret) == 0:
 			print('Error: imsto.ini not found or read error')

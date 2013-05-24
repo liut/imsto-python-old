@@ -8,14 +8,13 @@ if/qp/ceq9shcskssskc888k4.jpg => ifqpceq9shcskssskc888k4
 Created by liut on 2010-12-04.
 Copyright (c) 2010 liut. All rights reserved.
 """
+import imp
+import os, re
+imsto = imp.load_module('imsto', *imp.find_module('imsto',[os.path.join(os.path.dirname(__file__), '..')]))
+from imsto import *
+from _respond import *
 
-
-from _util import *
-import _config, os, re
-
-config = _config.Config()
-
-from _respond import not_found
+config = Config()
 
 def appImageHandle(environ, start_response):
 	"""main image url process"""
@@ -112,7 +111,6 @@ def appImageHandle(environ, start_response):
 	return environ['wsgi.file_wrapper'](fd, 4096)
 
 def processFile(id, filename, section='imsto'):
-	from store import ImSto
 	imsto = ImSto(section)
 	file = imsto.get(id)
 	if file is None:

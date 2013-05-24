@@ -6,6 +6,8 @@ Created by liut on 2010-12-04.
 Copyright (c) 2010-2012 liut. All rights reserved.
 """
 
+__all__ = ['SimpImage']
+
 import ctypes
 from _wand import (NewMagickWand,DestroyMagickWand,CloneMagickWand,ClearMagickWand,
 MagickReadImageBlob,MagickReadImage,MagickWriteImage,MagickGetImageBlob,
@@ -19,6 +21,7 @@ MagickGetException,MagickClearException,
 )
 import warnings
 
+import os
 
 class SimpImage(object):
 	_max_width, _max_height = 0, 0
@@ -26,8 +29,11 @@ class SimpImage(object):
 	"""docstring for ClassName"""
 	def __init__(self, image = None):
 		self._wand = NewMagickWand()
-		if image is not None:
-			self.read( image)
+		if isinstance(image, basestring):
+			if os.access(image, os.R_OK):
+				self.read(image)
+			else:
+				print 'image {} not found or access deny'.format(image)
 
 	def __del__(self):
 		if self._wand:

@@ -12,6 +12,8 @@ import re
 import _config
 config = _config.Config()
 
+__all__ = ['ImSto', 'EngineError']
+
 class ImSto:
 	db = None
 	engine = None

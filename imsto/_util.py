@@ -13,6 +13,9 @@ config = _config.Config()
 from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
 MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
 
+__all__ = ['check_dirs', 'save_file', 'thumb_image', 'guess_mimetype', 'watermark_image']
+
+
 def check_dirs(filename):
 	dir_name = os.path.dirname(filename)
 	if not os.path.exists(dir_name):
@@ -139,7 +142,12 @@ def guess_mimetype(fn, default="application/octet-stream"):
 def watermark_image(filename, distname):
 	from image import SimpImage
 	im = SimpImage(filename)
-	im_w = SimpImage(os.path.join(os.path.dirname(__file__), '../config/watermark.png'))
+	if os.environ.has_key('IMSTO_SETTINGS_ROOT'):
+		watermark = os.path.join(os.environ['IMSTO_SETTINGS_ROOT'], 'watermark.png')
+	else:
+		watermark = os.path.join(os.path.dirname(__file__), '../config/watermark.png')
+	#print ini_file
+	im_w = SimpImage(watermark)
 	#print im_w.wand
 	check_dirs(distname)
 	if im.watermark(im_w, 0.5, position='bottom-right'):

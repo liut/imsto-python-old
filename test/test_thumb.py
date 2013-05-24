@@ -7,8 +7,10 @@ Created by liut on 2012-11-28.
 Copyright (c) 2010-2012 liut. All rights reserved.
 """
 
+import imp
+imsto = imp.load_module('imsto', *imp.find_module('imsto',[os.path.join(os.path.dirname(__file__), '..')]))
+from imsto import thumbnail_wand
 
-from _util import *
 
 @profile
 def test():

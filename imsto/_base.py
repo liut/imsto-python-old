@@ -1,3 +1,6 @@
+
+__all__ = ['base_convert']
+
 #BASE2 = "01"
 #BASE10 = "0123456789"
 #BASE16 = "0123456789abcdef"

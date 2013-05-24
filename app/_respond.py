@@ -1,4 +1,7 @@
 
+__all__ = ['abuilding', 'not_found', 'print_env']
+
+
 def abuilding(self, environ, start_response):
 	start_response('200 OK', [('Content-type', 'text/plain')])
 	return ['Abuilding']

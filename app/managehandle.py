@@ -6,12 +6,12 @@ Created by liut on 2010-12-18.
 Copyright (c) 2010 liut. All rights reserved.
 """
 
+import os,re,imp
+imsto = imp.load_module('imsto', *imp.find_module('imsto',[os.path.join(os.path.dirname(__file__), '..')]))
+from imsto import *
+from _respond import *
 
-import os
-import re
 import json
-from _respond import not_found
-from store import ImSto
 
 def manage(environ, start_response):
 	path_info = environ.get('PATH_INFO', '')
@@ -48,7 +48,6 @@ def manage(environ, start_response):
 		#start_response('200 OK', [('Content-type', 'text/plain')])
 		#return ['Stored']
 	elif  (action == 'env'):
-		from _respond import print_env
 		return print_env(environ, start_response)
 	
 	start_response('200 OK', [('Content-type', 'text/plain')])
@@ -109,7 +108,10 @@ def stored_process(environ, start_response):
 
 
 if __name__ == '__main__':
-	pass
+	from wsgiref.simple_server import make_server
+	httpd = make_server('', 8001, manage)
+	print("Listening on port 8001....\n image manage example: http://localhost:8001/\n")
+	httpd.serve_forever()
 else:
 	from errorhandle import ErrorHandle
 	application = ErrorHandle(manage)
