@@ -1,15 +1,21 @@
 #!/sbin/runscript
 
-# imsto boot script for gentoo only
-# install: sudo cp imsto-img.init.sh /etc/init.d/imsto-img
+# uwsgi boot script for gentoo only
+# install:
+# - sudo cp uwsgi.init.gentoo.sh /etc/init.d/uwsgi
+# - cd /etc/init.d
+# - sudo chmod a+x uwsgi
+# - sudo ln -s uwsgi myapp
+# - cd /etc/uwsgi_apps
+# - sudo vim myapp.ini
 # author: liut, 20121210
 
 
-uwsgi_config="/var/imsto/config/uwsgi/prd.ini"
+uwsgi_config="/etc/uwsgi_apps/${SVCNAME}.ini"
 
 command=/usr/local/bin/uwsgi
 pidfile=/var/run/${SVCNAME}.pid
-command_args="--uid nobody --ini ${uwsgi_config}:app_img --pidfile ${pidfile}"
+command_args="--uid nobody --ini ${uwsgi_config} --pidfile ${pidfile}"
 
 extra_started_commands="reload"
 
