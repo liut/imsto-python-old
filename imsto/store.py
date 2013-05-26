@@ -15,6 +15,7 @@ from pymongo import ASCENDING, DESCENDING, MongoClient
 from _config import Config
 from _base import base_convert
 from _util import *
+from urlparse import urljoin
 
 __all__ = ['ImSto', 'EngineError', 'UrlError', 'guessImageType']
 
@@ -27,11 +28,11 @@ class ImSto:
 	def __init__(self, section='imsto'):
 		"""engine: mongodb(default), s3"""
 		self.section = section
+		self._config = Config()
+
 		self.engine = self.get_config('engine')
 		self.fs_prefix = self.get_config('fs_prefix')
 		print 'section: {self.section}, engine: {self.engine}, fs_prefix: {self.fs_prefix}'.format(self=self)
-
-		self._config = Config()
 
 		if self.engine == 's3':
 			self.bucket = self.get_config('bucket_name')
@@ -52,14 +53,12 @@ class ImSto:
 			items.append(makeItem(item))
 		return {'items':items,'total':cursor.count(),'url_prefix': self.get_config('url_prefix')}
 		
-	def store(self, file, ctype, name=None):
+	def store(self, file=None, ctype=None, content=None, name=None):
 		"""save a file-like to mongodb"""
-		if not hasattr(file, 'read'):
+		if content is None and not hasattr(file, 'read'):
 			raise TypeError('invalid file-like object')
-		if ctype is None or ctype == '':
-			raise ValueError('invalid content type value')
 
-		data = file.read()
+		data = content if content is not None else file.read()
 		if (len(data) > int(self.get_config('max_file_size'))):
 			return [False, 'file: {} too big'.format(name)]
 		ext = guessImageType(data[:32])
@@ -78,6 +77,9 @@ class ImSto:
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
+		if ctype is None or ctype == '':
+			from _util import guess_mimetype
+			ctype = guess_mimetype(filename)
 		spec = {'_id': id,'filename': filename, 'content_type': ctype}
 		if name:
 			spec['name'] = name
@@ -237,10 +239,15 @@ class ImSto:
 		else:
 			file = self.get(id)
 			if file is None:
-				imsto.close()
+				self.close()
 				print('imsto: id {} not found'.format(id))
 				return False
 		save_file(file, filename)
+
+	def url(self, path, size='orig'):
+		url_prefix = self.get_config('url_prefix')
+		thumb_path = self.get_config('thumb_path')
+		return urljoin(url_prefix, thumb_path, size, path)
 
 class EngineError(Exception):
 	""" Invalid Engine """
