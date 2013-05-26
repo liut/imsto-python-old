@@ -1,5 +1,7 @@
 #! /bin/sh
 
+# tested at macosx
+
 ### BEGIN INIT INFO
 # Provides:          uwsgi imsto
 # Required-Start:    $remote_fs $network
@@ -10,55 +12,39 @@
 # Description:       starts imsto
 ### END INIT INFO
 
-name="images"
-uwsgi_module="imagehandle"
-#uwsgi_socket="/tmp/imsto_img.sock"
-
-prefix=/opt/imsto
-#exec_prefix=${prefix}
-CACHE_DIR="${prefix}/cache"
-LOGS_DIR="${prefix}/logs"
+name="imsto"
 
 PATH=/opt/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/opt/bin
-PYTHON_EGG_CACHE=${prefix}/cache/eggs
 
 uwsgi_BIN=`which uwsgi`
-uwsgi_pidfile="${prefix}/logs/${name}.pid"
-#uwsgi_logfile="${prefix}/logs/${name}.log"
-#uwsgi_flags="--pp ${prefix}/app -C --vacuum -p 2 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
-uwsgi_uid="80"
-uwsgi_gid="80"
-#uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} ${uwsgi_flags}"
-# --uid ${uwsgi_uid} --gid ${uwsgi_gid}
-uwsgi_opts="--ini ${prefix}/config/uwsgi/dev.ini:app_img --pidfile ${uwsgi_pidfile}"
+uwsgi_uid="nobody"
+uwsgi_gid="nobody"
 
-#echo "${uwsgi_BIN}"
+uwsgi_pidfile="/var/run/${name}.pid"
+uwsgi_config="/etc/uwsgi_apps/${name}.ini"
+
+uwsgi_opts="--ini ${uwsgi_config} --pidfile ${uwsgi_pidfile}"
+
 if [ -z "${uwsgi_BIN}" ]; then
 	echo "uwsgi not found or access denied"
 	exit 1;
 fi
 
 
-check_dirs () {
-	[ ! -d $CACHE_DIR -a ! -e $CACHE_DIR ] && mkdir $CACHE_DIR
-	for dir in eggs temp thumb
-		do
-			[ -e $CACHE_DIR/$dir ] || mkdir $CACHE_DIR/$dir
-			if [ -d $CACHE_DIR/$dir ]; then
-				chmod a+w $CACHE_DIR/$dir
-			fi
-	done
-	if [ ! -d $LOGS_DIR ]; then
-		mkdir $LOGS_DIR
-	fi
-	
-}
-
 case `echo "testing\c"`,`echo -n testing` in
     *c*,-n*) echo_n=   echo_c=     ;;
     *c*,*)   echo_n=-n echo_c=     ;;
     *)       echo_n=   echo_c='\c' ;;
 esac
+
+
+check_dirs () {
+
+	if [ ! -e $uwsgi_config ]; then
+		echo "${uwsgi_config} not found"
+		exit 1;
+	fi
+}
 
 wait_for_pid () {
 	try=0
@@ -127,7 +113,7 @@ case "$1" in
 		wait_for_pid removed $uwsgi_pidfile
 
 		if [ -n "$try" ] ; then
-			echo " failed. Use force-exit"
+			echo " failed. Use force-quit"
 			exit 1
 		else
 			echo " done"

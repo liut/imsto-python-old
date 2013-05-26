@@ -51,4 +51,10 @@ def base_convert(number,frombase = 10, tobase = 36):
 
 	return res
 
-
+if __name__ == '__main__':
+	a = 45
+	print '{0}: {1}'.format(a, base_convert(a, 10, 36))
+	a = 'aac'
+	print '{0}: {1}'.format(a, base_convert(a, 16, 36))
+	a = '5cc163b92ab9b482b4486999d354f91e'
+	print '{0}: {1}'.format(a, base_convert(a, 16, 36))

@@ -19,6 +19,7 @@ Options:
   -i, --import     Import file to storeage
   -q, --id        get a file by id
   -l, --list       List files
+  -m, --meta filename      get a file meta
   -t, --test       test a file
   -h, --help       Show this message
   -v, --verbose    Verbose output
@@ -38,7 +39,7 @@ def main(argv=None):
 	
 	try:
 		try:
-			opts, args = getopt.getopt(argv[1:], "hi:q:lt:v", ["help", "import=", "id=", "list", "test", "verbose", "limit=", "start="])
+			opts, args = getopt.getopt(argv[1:], "hi:q:lm:t:v", ["help", "import=", "id=", "list", "meta", "test", "verbose", "limit=", "start="])
 		except getopt.error, msg:
 			raise Usage(msg)
 		
@@ -68,6 +69,9 @@ def main(argv=None):
 			elif option in ("-t", "--test"):
 				action = 'test'
 				filename = value
+			elif option in ("-m", "--meta"):
+				action = 'meta'
+				path = value
 			elif option in ("-q", "--id"):
 				action = 'get'
 				id = value
@@ -84,13 +88,28 @@ def main(argv=None):
 			return 0
 		elif (action == 'get') and id is not None:
 			imsto = ImSto()
-			if not imsto.getFs().exists(id):
+			if not imsto.exists(id):
 				print ('not found')
 				return 1
 			gf = imsto.get(id)
 			#print(gf)
 			print ("found: {0.name}\t{0.length}".format(gf))
 			return 0
+		elif action == 'import':
+			if os.access(store_file, os.R_OK):
+				imsto = ImSto()
+				from _util import guess_mimetype
+				ctype = guess_mimetype(store_file)
+				with open(store_file) as fp:
+					ret = imsto.store(fp, ctype)
+					print ret
+			else:
+				print 'image {} not found or access deny'.format(store_file)
+			return 0
+		elif action == 'meta':
+			print 'meta for path: {}'.format(path)
+			imsto = ImSto()
+			print imsto.meta(path=path)
 		elif (action == 'test'):
 			print('filename: %r' % filename)
 			fp = open(filename, 'rb')
