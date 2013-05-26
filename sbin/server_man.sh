@@ -11,11 +11,12 @@
 ### END INIT INFO
 
 name="manage"
-uwsgi_module="managehandle"
+uwsgi_module="app.managehandle"
 uwsgi_socket="/tmp/imsto_man.sock"
 
 prefix=/opt/imsto
 #exec_prefix=${prefix}
+config="${prefix}/config"
 
 PATH=/opt/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/opt/bin
 PYTHON_EGG_CACHE=${prefix}/cache/eggs
@@ -23,7 +24,7 @@ PYTHON_EGG_CACHE=${prefix}/cache/eggs
 uwsgi_BIN=`which uwsgi`
 uwsgi_pidfile="${prefix}/logs/${name}.pid"
 uwsgi_logfile="${prefix}/logs/${name}.log"
-uwsgi_flags="--pp ${prefix}/app --vacuum -C -p 1 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
+uwsgi_flags="--pp ${prefix} --env IMSTO_CONF_DIR=${config} --vacuum -C -p 1 -M -t 20 --limit-as 32 -m -w ${uwsgi_module}"
 
 uwsgi_opts="--pidfile ${uwsgi_pidfile} -s ${uwsgi_socket} -d ${uwsgi_logfile} ${uwsgi_flags}"
 # --uid ${uwsgi_uid} --gid ${uwsgi_gid}

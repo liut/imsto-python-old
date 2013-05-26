@@ -72,8 +72,9 @@ def stored_process(environ, start_response):
 		return [json.dumps([False, 'bad request'])]
 	oper = form['oper']
 	print(oper)
+	section = form['section'] if form.has_key('section') else 'imsto'
 	from store import ImSto
-	imsto = ImSto()
+	imsto = ImSto(section)
 	if oper.value == 'delete':
 		id = form['id']
 		return [json.dumps(imsto.delete(id.value))]

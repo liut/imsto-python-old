@@ -1,3 +1,4 @@
+/build/*
 /cache/*
 /logs/*
 Thumbs.db
@@ -11,5 +12,5 @@ Thumbs.db
 *.swp
 *.out
 *.class
-*.pyc
-*.pyo
+*.py[co]
+*.egg-info

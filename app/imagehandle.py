@@ -14,10 +14,12 @@ imsto = imp.load_module('imsto', *imp.find_module('imsto',[os.path.join(os.path.
 from imsto import *
 from _respond import *
 
-config = Config()
+#os.environ.setdefault("IMSTO_CONF_ROOT", os.path.join(os.path.dirname(__file__), '../config'))
+
 
 def appImageHandle(environ, start_response):
 	"""main image url process"""
+	
 	SECTION = environ.get('IMSTO_SECTION', 'imsto')
 	#print 'engine_code: {0}'.format(engine_code)
 	imsto = ImSto(SECTION)
@@ -37,7 +39,7 @@ def appImageHandle(environ, start_response):
 	
 	server_soft = environ.get('SERVER_SOFTWARE','')
 	if server_soft[:5] == 'nginx' and os.name != 'nt':
-		print('{0}/{1}'.format(THUMB_PATH, dst_path))
+		print('path: {0}/{1}'.format(THUMB_PATH, dst_path))
 		start_response('200 OK', [('X-Accel-Redirect', '{0}/{1}'.format(THUMB_PATH, dst_path))])
 		return []
 	#print(file.type) 

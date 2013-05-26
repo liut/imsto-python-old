@@ -26,13 +26,12 @@ Launch development
 		
 	vim /etc/hosts
 	
-		127.0.0.1   m.imsto.net
-		127.0.0.1   man.imsto.net
+		127.0.0.1   m.imsto.net  man.imsto.net
 
 * uwsgi: there have two socket service
 
 	 start image handle:
-		`./server_image.sh start`
+		`sudo ./sbin/server_image.sh start`
 	
 	 start manage handle:
 		`./server_man.sh start`
@@ -45,10 +44,10 @@ Launch development
 TODO list
 ---------
 
-- store tool (closed 70%)
-- <del>(web) gallery manager</del>
-- <del>(web) image upload</del>
-- permisions
+- store tool (closed 80%)
+- (web) gallery manager (need refactory)
+- (web) image upload (need refactory)
+- permisions & auth
 - demo: [demo]
 
 [pymongo]: http://pypi.python.org/pypi/pymongo/

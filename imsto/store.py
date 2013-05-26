@@ -12,10 +12,9 @@ import os,re
 from hashlib import md5
 from numbers import Integral
 from pymongo import ASCENDING, DESCENDING, MongoClient
-from _config import Config
+from _config import config
 from _base import base_convert
 from _util import *
-config = Config()
 
 __all__ = ['ImSto', 'EngineError', 'UrlError', 'guessImageType']
 
@@ -53,7 +52,7 @@ class ImSto:
 		return {'items':items,'total':cursor.count(),'url_prefix': self.get_config('url_prefix')}
 		
 	def store(self, file, ctype, name=None):
-		"""save a file to mongodb"""
+		"""save a file-like to mongodb"""
 		if not hasattr(file, 'read'):
 			raise TypeError('invalid file-like object')
 		if ctype is None or ctype == '':
@@ -78,7 +77,10 @@ class ImSto:
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
-		return [True, self.fs.put(data, _id=id, filename=filename, content_type=ctype,note=name), filename]
+		spec = {'_id': id,'filename': filename, 'content_type': ctype}
+		if name:
+			spec['name'] = name
+		return [True, self.fs.put(data, **spec), filename]
 	
 	def meta(self, id=None, filename=None):
 		spec = None
@@ -190,7 +192,7 @@ class ImSto:
 			mode = ids['size'][0]
 			dimension = ids['size'][1:]
 			if dimension not in SUPPORTED_SIZE:
-				print('unsupported size: {} {}'.format(mode, dimension))
+				#print('unsupported size: {} {}'.format(mode, dimension))
 				raise UrlError('unsupported size')
 			if ids['x'] is None:
 				size = int(dimension)
@@ -215,7 +217,6 @@ class ImSto:
 
 			else:
 				raise UrlError('bad modifier')
-
 
 		#print('dst_path: {}'.format(dst_path))
 		#print('dst_file: {}'.format(dst_file))

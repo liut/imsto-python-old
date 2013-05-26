@@ -7,8 +7,7 @@ Copyright (c) 2010 liut. All rights reserved.
 """
 
 import os
-import _config
-config = _config.Config()
+from _config import config
 
 from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
 MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
@@ -145,17 +144,22 @@ def watermark_image(filename, distname):
 	if os.environ.has_key('IMSTO_SETTINGS_ROOT'):
 		watermark = os.path.join(os.environ['IMSTO_SETTINGS_ROOT'], 'watermark.png')
 	else:
-		watermark = os.path.join(os.path.dirname(__file__), '../config/watermark.png')
+		watermark = os.path.join(os.getcwd(), '../config/watermark.png')
 	#print ini_file
 	im_w = SimpImage(watermark)
 	#print im_w.wand
 	check_dirs(distname)
+	r = None
 	if im.watermark(im_w, 0.5, position='bottom-right'):
 		print 'watermark ok'
-		return im.save(distname)
+		r = im.save(distname)
 
-	print 'error watermark'
-	return None
+	if r is None:
+		print 'error watermark'
+
+	del im
+	del im_w
+	return r
 
 
 

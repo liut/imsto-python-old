@@ -31,3 +31,9 @@ Installation
 * `make`
 * `cp uwsgi /usr/local/bin/`
 
+## ImSto
+
+* `cd /opt`
+* `git clone git://github.com/liut/imsto.git`
+* `cd imsto`
+* `less README.md`: read launch development

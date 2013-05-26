@@ -78,6 +78,9 @@ def main(argv=None):
 			else:
 				pass
 		
+		if action is None:
+			raise Usage(help_message)
+
 		print('action: {}'.format(action))
 		if (action == 'list'):
 			imsto = ImSto()
@@ -120,7 +123,7 @@ def main(argv=None):
 
 	except Usage, err:
 		print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
-		print >> sys.stderr, "\t for help use --help"
+		#print >> sys.stderr, "\t for help use --help"
 		return 2
 
 

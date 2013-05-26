@@ -139,7 +139,7 @@ class SimpImage(object):
 
 			if not r:
 				self.error()
-
+			return r
 
 	def thumbnail( self, columns, rows = None, fit = True, max_width = 0, max_height = 0 ):
 		if rows is None: rows = columns

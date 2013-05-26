@@ -6,7 +6,7 @@ Created by liut on 2010-12-15.
 Copyright (c) 2010 liut. All rights reserved.
 """
 
-__all__ = ['Config']
+__all__ = ['config']
 
 import ConfigParser,os
 
@@ -28,11 +28,11 @@ class Config():
 		'support_size': '120,160,250,400'
 		}
 		self.config = ConfigParser.SafeConfigParser(defaulting)
-		if os.environ.has_key('IMSTO_SETTINGS_ROOT'):
-			ini_file = os.path.join(os.environ['IMSTO_SETTINGS_ROOT'], 'imsto.ini')
+		if os.environ.has_key('IMSTO_CONF_DIR'):
+			ini_file = os.path.join(os.environ['IMSTO_CONF_DIR'], 'imsto.ini')
 		else:
-			ini_file = os.path.join(os.path.dirname(__file__), '../config/imsto.ini')
-		#print ini_file
+			ini_file = os.path.join(os.getcwd(), 'config/imsto.ini')
+		print 'config: {}'.format(ini_file)
 
 		ret = self.config.read(ini_file)
 		if len(ret) == 0:
@@ -60,9 +60,9 @@ class Config():
 
 		return val
 
+config = Config()
 
 if __name__ == '__main__':
-	config = Config()
 	print(config.config.sections())
 	print(config.get('servers'))
 	print config.get('thumb_root')
