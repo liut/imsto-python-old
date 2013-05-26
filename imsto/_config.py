@@ -6,11 +6,20 @@ Created by liut on 2010-12-15.
 Copyright (c) 2010 liut. All rights reserved.
 """
 
-__all__ = ['config']
+__all__ = ['Config']
 
 import ConfigParser,os
 
-class Config():
+class Singleton(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+		return cls._instances[cls]
+
+class Config(object):
+	__metaclass__ = Singleton
+
 	"""docstring for Config"""
 	def __init__(self):
 		
@@ -60,9 +69,13 @@ class Config():
 
 		return val
 
-config = Config()
+
 
 if __name__ == '__main__':
+	config = Config()
+	config2 = Config()
+	print id(config)
+	print id(config2)
 	print(config.config.sections())
 	print(config.get('servers'))
 	print config.get('thumb_root')

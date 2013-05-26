@@ -12,7 +12,7 @@ import os,re
 from hashlib import md5
 from numbers import Integral
 from pymongo import ASCENDING, DESCENDING, MongoClient
-from _config import config
+from _config import Config
 from _base import base_convert
 from _util import *
 
@@ -31,14 +31,15 @@ class ImSto:
 		self.fs_prefix = self.get_config('fs_prefix')
 		print 'section: {self.section}, engine: {self.engine}, fs_prefix: {self.fs_prefix}'.format(self=self)
 
-		if self.engine == 's3':
-			self.bucket = config.get('bucket_name', section)
-			self.AccessKey = config.get('s3_access_key', section)
-			self.SecretKey = config.get('s3_secret_key', section)
+		self._config = Config()
 
+		if self.engine == 's3':
+			self.bucket = self.get_config('bucket_name')
+			self.AccessKey = self.get_config('s3_access_key')
+			self.SecretKey = self.get_config('s3_secret_key')
 
 	def get_config(self, key):
-		return config.get(key, self.section)
+		return self._config.get(key, self.section)
 		
 	def browse(self, limit=20, start=0):
 		"""retrieve files from mongodb for gallery"""
@@ -164,8 +165,8 @@ class ImSto:
 		#print('section: {}, engine: {}, path: {}, id: {}'.format(SECTION, engine_code, path, id))
 
 		#THUMB_PATH = config.get('thumb_path', SECTION).rstrip('/')
-		THUMB_ROOT = config.get('thumb_root', self.section).rstrip('/')
-		SUPPORTED_SIZE = config.get('support_size', self.section).split(',')
+		THUMB_ROOT = self.get_config.get('thumb_root', self.section).rstrip('/')
+		SUPPORTED_SIZE = self.get_config.get('support_size', self.section).split(',')
 
 		org_path = '{t1}/{t2}/{t3}.{ext}'.format(**ids)
 		org_file = '{0}/orig/{1}'.format(THUMB_ROOT, org_path)

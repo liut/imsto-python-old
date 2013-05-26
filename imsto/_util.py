@@ -7,13 +7,11 @@ Copyright (c) 2010 liut. All rights reserved.
 """
 
 import os
-from _config import config
 
 from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
 MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
 
 __all__ = ['check_dirs', 'save_file', 'thumb_image', 'guess_mimetype', 'watermark_image']
-
 
 def check_dirs(filename):
 	dir_name = os.path.dirname(filename)
@@ -110,15 +108,13 @@ def thumbnail_pil(filename, size_1, distname):
 	im.save(distname, im.format)
 	del im
 
-def thumb_image(filename, width, height, distname, mode='s'):
-	tt = config.get('thumb_method')
-	#print('thumb_method: {0}'.format(tt))
+def thumb_image(filename, width, height, distname, mode='s', method='wand'):
 	check_dirs(distname)
-	if tt == 'shell':
+	if method == 'shell':
 		return thumbnail_shell(filename, width, distname)
-	elif tt == 'wand':
+	elif method == 'wand':
 		return thumbnail_wand(filename, width, height, distname, mode=mode)
-	elif tt == 'pil':
+	elif method == 'pil':
 		return thumbnail_pil(filename, width, distname)
 
 
@@ -144,7 +140,7 @@ def watermark_image(filename, distname):
 	if os.environ.has_key('IMSTO_SETTINGS_ROOT'):
 		watermark = os.path.join(os.environ['IMSTO_SETTINGS_ROOT'], 'watermark.png')
 	else:
-		watermark = os.path.join(os.getcwd(), '../config/watermark.png')
+		watermark = os.path.join(os.getcwd(), 'config/watermark.png')
 	#print ini_file
 	im_w = SimpImage(watermark)
 	#print im_w.wand
