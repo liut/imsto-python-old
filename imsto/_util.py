@@ -137,8 +137,8 @@ def guess_mimetype(fn, default="application/octet-stream"):
 def watermark_image(filename, distname):
 	from image import SimpImage
 	im = SimpImage(filename)
-	if os.environ.has_key('IMSTO_SETTINGS_ROOT'):
-		watermark = os.path.join(os.environ['IMSTO_SETTINGS_ROOT'], 'watermark.png')
+	if os.environ.has_key('IMSTO_CONF_DIR'):
+		watermark = os.path.join(os.environ['IMSTO_CONF_DIR'], 'watermark.png')
 	else:
 		watermark = os.path.join(os.getcwd(), 'config/watermark.png')
 	#print ini_file
