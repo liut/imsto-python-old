@@ -25,6 +25,7 @@ class Config(object):
 		
 		defaulting = {
 		'servers': 'localhost',
+		'replica_set': None,
 		'engine': 'mongodb',
 		'db_name': 'storage',
 		'fs_prefix': 'img',

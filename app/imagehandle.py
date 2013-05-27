@@ -24,7 +24,7 @@ def appImageHandle(environ, start_response):
 	#print 'engine_code: {0}'.format(engine_code)
 	imsto = ImSto(SECTION)
 	path = environ.get('PATH_INFO', '')
-	THUMB_PATH = config.get('thumb_path', SECTION).rstrip('/')
+	THUMB_PATH = imsto.get_config('thumb_path').rstrip('/')
 	try:
 		dst_file, dst_path = imsto.load(path)
 	except UrlError, e:

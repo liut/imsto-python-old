@@ -11,11 +11,10 @@ Copyright (c) 2010 liut. All rights reserved.
 import os,re
 from hashlib import md5
 from numbers import Integral
-from pymongo import ASCENDING, DESCENDING, MongoClient
+from pymongo import ASCENDING, DESCENDING, MongoClient, MongoReplicaSetClient, ReadPreference
 from _config import Config
 from _base import base_convert
 from _util import *
-from urlparse import urljoin
 
 __all__ = ['ImSto', 'EngineError', 'UrlError', 'guessImageType']
 
@@ -60,10 +59,10 @@ class ImSto:
 
 		data = content if content is not None else file.read()
 		if (len(data) > int(self.get_config('max_file_size'))):
-			return [False, 'file: {} too big'.format(name)]
+			raise ValueError('file: {} too big'.format(name))
 		ext = guessImageType(data[:32])
 		if ext is None:
-			return [False, 'invalid image file']
+			raise ValueError('invalid image file')
 
 		hashed = md5(data).hexdigest()
 		print ('md5 hash: {}'.format(hashed))
@@ -73,7 +72,7 @@ class ImSto:
 		# TODO: fix for support s3 front browse
 		if self.fs.exists(id) or self.fs.exists(md5=hashed):
 			print ('id {} or hash {} exists!!'.format(id, hashed))
-			return [False, 'already exists']
+			raise ValueError('already exists')
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
@@ -135,7 +134,12 @@ class ImSto:
 	@property
 	def db(self):
 		if self._db is None:
-			c = MongoClient(self.get_config('servers'))
+			host_or_uri = self.get_config('servers')
+			replica_set = self.get_config('replica_set')
+			if replica_set:
+				c = MongoReplicaSetClient(host_or_uri, replicaSet=replica_set,read_preference=ReadPreference.NEAREST)
+			else:
+				c = MongoClient(host_or_uri,read_preference=ReadPreference.NEAREST)
 			self._db = c[self.get_config('db_name')]
 		return self._db
 
@@ -167,8 +171,8 @@ class ImSto:
 		#print('section: {}, engine: {}, path: {}, id: {}'.format(SECTION, engine_code, path, id))
 
 		#THUMB_PATH = config.get('thumb_path', SECTION).rstrip('/')
-		THUMB_ROOT = self.get_config.get('thumb_root', self.section).rstrip('/')
-		SUPPORTED_SIZE = self.get_config.get('support_size', self.section).split(',')
+		THUMB_ROOT = self.get_config('thumb_root').rstrip('/')
+		SUPPORTED_SIZE = self.get_config('support_size').split(',')
 
 		org_path = '{t1}/{t2}/{t3}.{ext}'.format(**ids)
 		org_file = '{0}/orig/{1}'.format(THUMB_ROOT, org_path)
@@ -247,7 +251,7 @@ class ImSto:
 	def url(self, path, size='orig'):
 		url_prefix = self.get_config('url_prefix')
 		thumb_path = self.get_config('thumb_path')
-		return urljoin(url_prefix, thumb_path, size, path)
+		return '{}/{}/{}/{}'.format(url_prefix.rstrip('/'), thumb_path.strip('/'), size, path)
 
 class EngineError(Exception):
 	""" Invalid Engine """
