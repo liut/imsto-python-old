@@ -1,9 +1,11 @@
 import os
 import itertools
-from django.conf import settings
 from django.core.files.storage import Storage
+from django.conf import settings
 from imsto import ImSto
 from urlparse import urljoin
+
+MIN_PATH_LEN = 28
 
 class ImageStorage(Storage):
 	"""A custom storage backend to store files in GridFS
@@ -24,6 +26,7 @@ class ImageStorage(Storage):
 
 	def delete(self, name):
 		"""Deletes the specified file from the storage system.
+		TODO:
 		"""
 		pass
 
@@ -53,11 +56,9 @@ class ImageStorage(Storage):
 		"""Returns an absolute URL where the file's contents can be accessed
 		directly by a web browser.
 		"""
-		if name.startswith('images/'):
-			name = name.replace('images/','rumble/',1)
-		if name.startswith('rumble/'):
-			return urljoin(self.base_url, name).replace('\\', '/')
-		return self.imsto.url(name, size)
+		if len(name) > MIN_PATH_LEN and name[2] == name[5] == '/':
+			return self.imsto.url(name, size)
+		return urljoin(self.base_url, name).replace('\\', '/')
 
 	def _open(self, name, mode='rb'):
 		img = self.imsto.get(filename=name)
