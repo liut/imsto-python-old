@@ -7,7 +7,7 @@ from store import *
 #__all__ = (_base.__all__ + _config.__all__ + _util.__all__)
 
 
-VERSION = (1, 2, 1)
+VERSION = (1, 2, 2)
 
 
 def get_version():

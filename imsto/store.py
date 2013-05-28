@@ -155,22 +155,20 @@ class ImSto:
 		if self.db is not None:
 			self.db.connection.disconnect()
 
-	def load(self, url):
-		""" load from url """
-		image_url_regex = r'/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$'
-		match = re.search(image_url_regex, url)
+	def load(self, path):
+		""" load from url path """
+		#print 'path: %s (%s)' % (path, type(path))
+		image_url_regex = r'(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$'
+		match = re.search(image_url_regex, path)
 		#print(image_url_regex, path, match)
 		if match is None:
 			raise UrlError('invalid path')
 
 		ids = match.groupdict()
-		print(ids)
+		#print(ids)
 
 		id = '{t1}{t2}{t3}'.format(**ids)
-		#engine_code = config.get('engine', SECTION)
-		#print('section: {}, engine: {}, path: {}, id: {}'.format(SECTION, engine_code, path, id))
 
-		#THUMB_PATH = config.get('thumb_path', SECTION).rstrip('/')
 		THUMB_ROOT = self.get_config('thumb_root').rstrip('/')
 		SUPPORTED_SIZE = self.get_config('support_size').split(',')
 

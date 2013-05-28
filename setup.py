@@ -36,7 +36,7 @@ setup(
 	license = "BSD",
 	keywords = "imsto image storage",
 	url = "http://github.com/liut/imsto",
-	packages=['imsto'],
+	packages=['imsto', 'imsto.django'],
 	install_requires = ['pymongo>=2.5'],
 	long_description = read('README.md'),
     classifiers = CLASSIFIERS,
