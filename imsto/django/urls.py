@@ -1,8 +1,8 @@
 from django.conf.urls import patterns, url
 
-from handle import imagehandle, managehandle
+from handle import ImageHandle, ManageHandle
 
 urlpatterns = patterns('',
-    url(r't/(.+)$', imagehandle),
-    url(r'Manage/(.*)$', managehandle),
+    url(r'^t/(.+)$', ImageHandle),
+    url(r'^Manage/(.*)$', ManageHandle),
 )

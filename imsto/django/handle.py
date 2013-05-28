@@ -4,9 +4,9 @@ from imsto import ImSto, UrlError, guess_mimetype
 from django.http import HttpResponse, HttpResponseNotFound, StreamingHttpResponse
 from django.conf import settings
 
-__all__ = ['imagehandle', 'managehandle']
+__all__ = ['ImageHandle', 'ManageHandle']
 
-def imagehandle(request, path):
+def ImageHandle(request, path):
 	environ = request.META
 	SECTION = get_section(request.META)
 
@@ -36,7 +36,7 @@ def imagehandle(request, path):
 	return response
 	#return environ['wsgi.file_wrapper'](fd, 4096)
 
-def managehandle(request, path):
+def ManageHandle(request, path):
 	#print request
 	#print path
 	# TODO:
