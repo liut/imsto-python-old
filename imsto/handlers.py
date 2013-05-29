@@ -1,11 +1,11 @@
 
-import os
+import os,re
 import json
 from sys import exc_info
 from traceback import format_tb
 from imsto import *
 
-__all__ = ['ErrorHandle','ImageHandler','AdminHandler']
+__all__ = ['ErrorWrap','AuthWrap','AuthAdminHandle','ImageHandler','AdminHandler']
 
 def abuilding(self, environ, start_response):
 	"""show abuilding"""
@@ -31,7 +31,7 @@ def get_path_info(environ):
 	#print 'path: %s (%s)' % (path, type(path))
 	return path
 
-class ErrorHandle(object):
+class ErrorWrap(object):
 	"""The middleware we use."""
 	def __init__(self, app):
 		self.app = app
@@ -39,22 +39,15 @@ class ErrorHandle(object):
 	def __call__(self, environ, start_response):
 		"""Call the application can catch exceptions."""
 		appiter = None
-		# just call the application and send the output back
-		# unchanged but catch exceptions
 		try:
 			appiter = self.app(environ, start_response)
 			for item in appiter:
 				yield item
-		# if an exception occours we get the exception information
-		# and prepare a traceback we can render
 		except:
 			e_type, e_value, tb = exc_info()
 			traceback = ['Traceback (most recent call last):']
 			traceback += format_tb(tb)
 			traceback.append('%s: %s' % (e_type.__name__, e_value))
-			# we might have not a stated response by now. try
-			# to start one with the status code 500 or ignore an
-			# raised exception if the application already started one.
 			try:
 				start_response('500 INTERNAL SERVER ERROR', [
 							   ('Content-Type', 'text/plain')])
@@ -62,10 +55,64 @@ class ErrorHandle(object):
 				pass
 			yield '\n'.join(traceback)
 
-		# wsgi applications might have a close function. If it exists
-		# it *must* be called.
 		if hasattr(appiter, 'close'):
 			appiter.close()
+
+
+class AuthWrap(object):
+
+	def __init__(self, app):
+		self.app = app
+		self.section = 'imsto'
+		self.config = Config()
+
+	def __call__(self, environ, start_response):
+		self.section = environ.get('IMSTO_SECTION', 'imsto')
+		if not self.authorized(environ.get('HTTP_AUTHORIZATION')):
+			return self.auth_required(environ, start_response)
+		return self.app(environ, start_response)
+
+	def authorized(self, auth_header):
+		if not auth_header:
+			# If they didn't give a header, they better login...
+			return False
+		# .split(None, 1) means split in two parts on whitespace:
+		auth_type, encoded_info = auth_header.split(None, 1)
+		#print '{}, {}'.format(auth_type, encoded_info)
+		assert auth_type.lower() == 'basic'
+		unencoded_info = encoded_info.decode('base64')
+		username, password = unencoded_info.split(':', 1)
+		return self.check_password(username, password)
+
+	def check_password(self, username, password):
+		# Not very high security authentication...
+		admin_name = self.config.get('admin_name')
+		admin_pass = self.config.get('admin_pass')
+		#print 'input %s:%s' % (username, password)
+		if username != admin_name:
+			return False
+		if admin_pass == '':
+			print 'admin_pass is empty!'
+			return True
+
+		#hashed = password_hash(username, password)
+		#print '{} admin_pass\n{} hashed'.format(admin_pass, hashed)
+		return password_hash(username, password) == admin_pass
+
+	def auth_required(self, environ, start_response):
+		start_response('401 Authentication Required',
+			[('Content-type', 'text/html'),
+			 ('WWW-Authenticate', 'Basic realm="imsto"')])
+		return ["""
+		<html>
+		 <head><title>Authentication Required</title></head>
+		 <body>
+		  <h1>Authentication Required</h1>
+		  If you can't get in, then stay out.
+		 </body>
+		</html>"""]
+
+
 
 def ImageHandler(environ, start_response):
 	"""main image url handler"""
@@ -105,12 +152,12 @@ def AdminHandler(environ, start_response):
 	path = get_path_info(environ)
 	
 	man_regex = r'(env|Gallery|Stored)$'
-	match = re.search(man_regex, path_info)
+	match = re.search(man_regex, path)
 	#print('match: {0}'.format(match))
 	if match is None:
 		return not_found(environ, start_response)
 	
-	action = match.groups()[1]
+	action, = match.groups()
 	if (action == 'Gallery'):
 		from cgi import FieldStorage
 		form = FieldStorage(environ=environ)
@@ -195,6 +242,8 @@ def StoredHandler(environ, start_response):
 		return [json.dumps([False, 'invalid operation'])]
 
 
+AuthAdminHandle = ErrorWrap(AuthWrap(AdminHandler))
+
 
 # map urls to functions
 default_urls = [
@@ -229,6 +278,7 @@ if __name__ == '__main__':
 	httpd.serve_forever()
 
 else:
-	application = ErrorHandle(application)
+	application = ErrorWrap(application)
+
 
 

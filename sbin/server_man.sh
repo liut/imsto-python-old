@@ -11,7 +11,7 @@
 ### END INIT INFO
 
 name="manage"
-uwsgi_module="app.managehandle"
+uwsgi_module="imsto.handlers:AuthAdminHandle"
 uwsgi_socket="/tmp/imsto_man.sock"
 
 prefix=/opt/imsto

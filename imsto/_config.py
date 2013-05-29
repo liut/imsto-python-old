@@ -35,7 +35,9 @@ class Config(object):
 		'url_prefix': 'http://m.imsto.net/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
 		'max_file_size': '102400',
-		'support_size': '120,160,250,400'
+		'support_size': '120,160,250,400',
+		'admin_name': 'imsto',
+		'admin_pass': '',
 		}
 		self.config = ConfigParser.SafeConfigParser(defaulting)
 		if os.environ.has_key('IMSTO_CONF_DIR'):
