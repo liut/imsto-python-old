@@ -16,7 +16,7 @@ from _config import Config
 from _base import base_convert
 from _util import *
 
-__all__ = ['ImSto', 'EngineError', 'UrlError', 'guessImageType']
+__all__ = ['ImSto', 'EngineError', 'UrlError', 'guessImageType', 'makeId']
 
 class ImSto:
 	engine = None
@@ -66,11 +66,13 @@ class ImSto:
 
 		hashed = md5(data).hexdigest()
 		print ('md5 hash: {}'.format(hashed))
+
+		# TODO: add for support (md5 + size) id
 		id = makeId(hashed)
 		print ('id: {}'.format(id))
 
 		# TODO: fix for support s3 front browse
-		if self.fs.exists(id) or self.fs.exists(md5=hashed):
+		if self.exists(id) or self.exists(hashed=hashed):
 			print ('id {} or hash {} exists!!'.format(id, hashed))
 			raise ValueError('already exists')
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
@@ -79,6 +81,12 @@ class ImSto:
 		if ctype is None or ctype == '':
 			from _util import guess_mimetype
 			ctype = guess_mimetype(filename)
+
+		# TODO: save to s3
+		if self.engine == 's3':
+			raise NotImplementedError()
+
+		# save to mongodb
 		spec = {'_id': id,'filename': filename, 'content_type': ctype}
 		if name:
 			spec['name'] = name
@@ -125,7 +133,7 @@ class ImSto:
 	def fs(self):
 		if not self._fs:
 			if self.engine == 's3':
-				raise EngineError('s3 not need Fs')
+				raise EngineError('s3 has not use for Fs')
 			import gridfs
 			self._fs = gridfs.GridFS(self.db,self.fs_prefix)
 
@@ -230,8 +238,7 @@ class ImSto:
 
 	def prepare(self, filename, path, id):
 		if self.engine == 's3':
-			from simples3 import S3Bucket, KeyNotFound
-			s = S3Bucket(self.bucket, access_key=self.AccessKey, secret_key=self.SecretKey)
+			s = self.get_s3_bucket()
 			key = path
 			try:
 				file = s.get(key)
@@ -251,6 +258,13 @@ class ImSto:
 		thumb_path = self.get_config('thumb_path')
 		return '{}/{}/{}/{}'.format(url_prefix.rstrip('/'), thumb_path.strip('/'), size, path)
 
+	def get_s3_bucket():
+		from simples3 import S3Bucket, KeyNotFound
+		s = S3Bucket(self.bucket, access_key=self.AccessKey, secret_key=self.SecretKey)
+		return s
+
+
+
 class EngineError(Exception):
 	""" Invalid Engine """
 	pass
@@ -262,7 +276,7 @@ class UrlError(Exception):
 
 def makeId(hashed, size=None):
 	"""make mongo item id by file hash value"""
-	if size is None:
+	if size is None or size < 1:
 		return base_convert(hashed, 16, 36)
 	if not isinstance(size, Integral):
 		raise TypeError('expected a int, not ' + repr(size))
