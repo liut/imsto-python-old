@@ -3,11 +3,19 @@
 from ctypes import *
 from ctypes.util import find_library
 
-wand_lib = find_library('MagickWand')
-if not wand_lib:
+def load_library():
+    for suffix in '', '-Q16', '-Q8', '-6.Q16':
+        wand_lib = find_library('MagickWand' + suffix)
+        if not wand_lib:
+            continue
+        try:
+            _lib = CDLL(wand_lib)
+        except (IOError, OSError):
+            continue
+        return _lib
     raise ImportError('MagickWand library cannot be found.')
 
-_lib = CDLL(wand_lib)
+_lib = load_library()
 wand_version = 5
 # end of edit
 

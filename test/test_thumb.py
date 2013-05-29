@@ -7,12 +7,13 @@ Created by liut on 2012-11-28.
 Copyright (c) 2010-2012 liut. All rights reserved.
 """
 
+import os
 import imp
 imsto = imp.load_module('imsto', *imp.find_module('imsto',[os.path.join(os.path.dirname(__file__), '..')]))
 from imsto import thumbnail_wand
 
 
-@profile
+#@profile
 def test():
 	filename = 'monalisa.jpg'
 	print thumbnail_wand(filename, 160, 160, 'monalisa-s160.jpg')
