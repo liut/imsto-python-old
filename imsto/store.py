@@ -16,7 +16,10 @@ from _config import Config
 from _base import base_convert
 from _util import *
 
-__all__ = ['ImSto', 'EngineError', 'UrlError', 'guessImageType', 'makeId']
+__all__ = [
+	'ImSto', 'guessImageType', 'makeId',
+	'EngineError', 'UrlError', 'DuplicateError', 
+]
 
 class ImSto:
 	engine = None
@@ -74,7 +77,7 @@ class ImSto:
 		# TODO: fix for support s3 front browse
 		if self.exists(id) or self.exists(hashed=hashed):
 			print ('id {} or hash {} exists!!'.format(id, hashed))
-			raise ValueError('already exists')
+			raise DuplicateError('already exists')
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
@@ -125,9 +128,11 @@ class ImSto:
 		if id:
 			return self.fs.exists(id)
 		if hashed:
-			return self.collection.findOne([('md5', hashed)])
+			return self.collection.find_one([('md5', hashed)])
 		if filename:
-			return self.collection.findOne(filename=filename)
+			return self.collection.find_one(filename=filename)
+
+		return False
 
 	@property
 	def fs(self):
@@ -270,6 +275,10 @@ class EngineError(Exception):
 	pass
 
 class UrlError(Exception):
+	""" Invalid Url or path """
+	pass
+
+class DuplicateError(Exception):
 	""" Invalid Url or path """
 	pass
 

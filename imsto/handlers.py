@@ -5,7 +5,10 @@ from sys import exc_info
 from traceback import format_tb
 from imsto import *
 
-__all__ = ['ErrorWrap','AuthWrap','AuthAdminHandle','ImageHandler','AdminHandler']
+__all__ = [
+'ErrorWrap','AuthWrap',
+'AuthAdminHandle','ImageHandler','AdminHandler'
+]
 
 def abuilding(self, environ, start_response):
 	"""show abuilding"""
@@ -231,9 +234,12 @@ def StoredHandler(environ, start_response):
 		else:
 			f = new_file
 			print('single file %r %r' % (f.name, f.filename))
-			id = imsto.store(f.file, ctype=f.type, name=f.filename)
-			print('new_id: %r' % id)
-			result = id
+			try:
+				result = imsto.store(f.file, ctype=f.type, name=f.filename)
+				print('new_id: %r' % result[1])
+			except DuplicateError, e:
+				result = [False, e.message]
+			
 		if hasattr(imsto, 'close'):
 			imsto.close()
 		

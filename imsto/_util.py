@@ -11,7 +11,11 @@ import os
 from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
 MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
 
-__all__ = ['check_dirs', 'save_file', 'thumbnail_wand', 'thumb_image', 'guess_mimetype', 'watermark_image', 'password_hash']
+__all__ = [
+'check_dirs', 'save_file', 
+'thumbnail_wand', 'thumb_image', 'watermark_image', 
+'guess_mimetype', 'password_hash'
+]
 
 def check_dirs(filename):
 	dir_name = os.path.dirname(filename)
