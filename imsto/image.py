@@ -15,8 +15,9 @@ MagickGetImageFormat,MagickSetImageFormat,MagickGetImageWidth,MagickGetImageHeig
 MagickGetImageCompressionQuality,MagickSetImageCompressionQuality,
 MagickScaleImage,MagickRelinquishMemory,MagickStripImage,MagickThumbnailImage,MagickCropImage,MagickSetImagePage,
 MagickSetImageArtifact,
-DissolveCompositeOp,
-MagickCompositeImage,
+BlendCompositeOp,DissolveCompositeOp,ModulateCompositeOp,
+MagickCompositeImage,MagickLabelImage,
+MagickSetImageGravity,CenterGravity,SouthGravity,
 MagickGetException,MagickClearException,
 )
 import warnings
@@ -27,13 +28,12 @@ class SimpImage(object):
 	_max_width, _max_height = 0, 0
 
 	"""docstring for ClassName"""
-	def __init__(self, image = None):
-		self._wand = NewMagickWand()
-		if isinstance(image, basestring):
-			if os.access(image, os.R_OK):
-				self.read(image)
-			else:
-				print 'image {} not found or access deny'.format(image)
+	def __init__(self, file = None, image=None):
+		if isinstance(image, SimpImage):
+			self._wand = CloneMagickWand(image.wand)
+		else:
+			self._wand = NewMagickWand()
+			self.read(file)
 
 	def __del__(self):
 		if self._wand:
@@ -44,24 +44,30 @@ class SimpImage(object):
 		return self.clone()
 
 	def clone( self ):
-		c = SimpImage()
-		if self._wand:
-			c._wand = CloneMagickWand( self._wand )
-		return c
+		return type(self)(image=self)
 
 
 	def _clear( self ):
 		ClearMagickWand( self._wand )
 
 
-	def read( self, image):
+	def read( self, file):
 		self._clear()
-
-		if hasattr( image, 'read' ):
-			c = image.read()
-			MagickReadImageBlob( self._wand, c, len( c ) )
+		
+		if isinstance(file, basestring):
+			if os.access(file, os.R_OK):
+				r = MagickReadImage( self._wand, file )
+			else:
+				#print 'image {} not found or access deny'.format(file)
+				raise IOError('image {} not found or access deny'.format(file))
+		elif hasattr( file, 'read' ):
+			c = file.read()
+			r = MagickReadImageBlob( self._wand, c, len( c ) )
 		else:
-			MagickReadImage( self._wand, image )
+			raise TypeError('file must be a readable file path or filelike object')
+
+		if not r:
+			self.error()
 
 
 	@property
@@ -113,15 +119,21 @@ class SimpImage(object):
 	def quality(self, value):
 		MagickSetImageCompressionQuality( self._wand, int( round( value, 0 ) ) )
 
+	@property
+	def width(self):
+		return MagickGetImageWidth( self._wand )
+
+	@property
+	def height(self):
+		return MagickGetImageHeight( self._wand )
+
 	def scale( self, size ):
 		''' Scales the size of image to the given dimensions.
 			size - A tuple containing the size of the scaled image.'''
 		MagickScaleImage( self._wand, size[0], size[1] )
 
 	def _get_size( self ):
-		width = MagickGetImageWidth( self._wand )
-		height = MagickGetImageHeight( self._wand )
-		return ( width, height )
+		return ( self.width, self.height )
 	size = property( _get_size, scale, None, 'A tuple containing the size of the image. Setting the size is the same as calling scale().' )
 
 	def save( self, file = None ):
@@ -217,10 +229,23 @@ class SimpImage(object):
 		
 		return True
 
-	def watermark(self, image, transparency=0.0, left=0, top=0, position=None):
+	def watermark(self, image, transparency=0.0, left=0, top=0, position=None, copyright=None):
+		"""
+		watermark methods:
+		1. convert bgnd overlay   -compose modulate \
+			-define compose:args={brigthness}[,{saturation}] \
+			-composite  result
+		2. convert bgnd overlay   -compose dissolve \
+			-define compose:args={src_percent},{dst_percent} \
+			-composite  result
+		"""
 		watermark_image = image.clone()
 		s_width, s_height = self.size
 		w_width, w_height = watermark_image.size
+
+		if s_width < w_width or s_height < w_height:
+			print 'source image is too small, must large than {} x {}'.format(w_width, w_height)
+			return False
 
 		if position == 'bottom-right':
 			left = s_width - w_width - 10
@@ -233,13 +258,31 @@ class SimpImage(object):
 		elif position == 'bottom-left':
 			left = 10
 			top = s_height - w_height - 10
+		elif position == 'center':
+			left = (s_width - w_width) / 2
+			top = (s_height - w_height) / 2
+		elif position == 'golden':
+			#left = s_width * 0.382 - w_width / 2
+			left = (s_width - w_width) / 2
+			top = s_height * 0.618 - w_height / 2
 
-		MagickSetImageArtifact(watermark_image.wand,"compose:args", "70%")
-		op = DissolveCompositeOp
+		MagickSetImageArtifact(watermark_image.wand,"compose:args", "15%")
+		#MagickSetImageArtifact(watermark_image.wand,"compose:args", "5")
+		#MagickSetImageGravity(watermark_image.wand, SouthGravity)
+		#op = DissolveCompositeOp
+		#op = ModulateCompositeOp
+		op = BlendCompositeOp
 		r = MagickCompositeImage(self.wand, watermark_image.wand, op, int(left), int(top))
+		del watermark_image
 
 		if not r:
 			self.error()
+
+		if copyright and isinstance(copyright, SimpImage):
+			ci = copyright.clone()
+			MagickSetImageArtifact(ci.wand,"compose:args", "40%")
+			MagickCompositeImage(self.wand, ci.wand, op, int(s_width * 0.382 - w_width / 2), int(s_height - w_height - s_height*.1))
+			del ci
 
 		return r
 

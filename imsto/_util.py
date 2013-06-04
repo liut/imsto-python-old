@@ -143,14 +143,17 @@ def watermark_image(filename, distname):
 	im = SimpImage(filename)
 	if os.environ.has_key('IMSTO_CONF_DIR'):
 		watermark = os.path.join(os.environ['IMSTO_CONF_DIR'], 'watermark.png')
+		copyright = os.path.join(os.environ['IMSTO_CONF_DIR'], 'watermark-copy.png')
 	else:
 		watermark = os.path.join(os.getcwd(), 'config/watermark.png')
+		copyright = os.path.join(os.getcwd(), 'config/watermark-copy.png')
 	#print ini_file
 	im_w = SimpImage(watermark)
 	#print im_w.wand
 	check_dirs(distname)
+	ci = SimpImage(copyright) if os.access(copyright, os.R_OK) else None
 	r = None
-	if im.watermark(im_w, 0.5, position='bottom-right'):
+	if im.watermark(im_w, 0.5, position='golden', copyright=ci):
 		print 'watermark ok'
 		r = im.save(distname)
 
