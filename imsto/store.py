@@ -263,7 +263,7 @@ class ImSto:
 		thumb_path = self.get_config('thumb_path')
 		return '{}/{}/{}/{}'.format(url_prefix.rstrip('/'), thumb_path.strip('/'), size, path)
 
-	def get_s3_bucket():
+	def get_s3_bucket(self):
 		from simples3 import S3Bucket, KeyNotFound
 		s = S3Bucket(self.bucket, access_key=self.AccessKey, secret_key=self.SecretKey)
 		return s
