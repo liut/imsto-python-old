@@ -16,23 +16,40 @@ help_message = '''
 Usage: store.py [options] [filename]
 
 Options:
-  -i, --import     Import file to storeage
-  -q, --id        get a file by id
-  -l, --list       List files
-  -m, --meta filename      get a file meta
-  -t, --test       test a file
-  -h, --help       Show this message
-  -v, --verbose    Verbose output
-  -q, --quiet      Minimal output
+  -i, --import filename	 Import file to storeage
+  -q, --id		get a file by id
+  -l, --list	   List files
+  -m, --meta filename	  get a file meta
+  -t, --test	   test a file
+  -h, --help	   Show this message
+  -v, --verbose	Verbose output
+  -q, --quiet	  Minimal output
 
 '''
-
 
 class Usage(Exception):
 	def __init__(self, msg):
 		self.msg = msg
 
+def list_dir(limit=5,start=0,prefix=''):
+	imsto = ImSto()
+	gallery = imsto.browse(limit, start)
+	for img in gallery['items']:
+		#print(img)
+		print("{0[filename]}\t{0[length]:8,d}".format(img))
 
+def store_file(filename):
+	if os.access(filename, os.R_OK):
+		imsto = ImSto()
+		from _util import guess_mimetype
+		ctype = guess_mimetype(filename)
+		with open(filename) as fp:
+			ret = imsto.store(fp, ctype)
+			print ret
+	else:
+		print 'image {} not found or access deny'.format(filename)
+
+"""
 def main(argv=None):
 	if argv is None:
 		argv = sys.argv
@@ -61,8 +78,8 @@ def main(argv=None):
 			if option in ("-h", "--help"):
 				raise Usage(help_message)
 			if option in ("-i", "--import"):
-				store_file = value
-				print('store file: {0}'.format(store_file))
+				filename = value
+				print('store file: {0}'.format(filename))
 				action = 'import'
 			elif option in ("-l", "--list"):
 				action = 'list'
@@ -83,11 +100,7 @@ def main(argv=None):
 
 		print('action: {}'.format(action))
 		if (action == 'list'):
-			imsto = ImSto()
-			gallery = imsto.browse(limit, start)
-			for img in gallery['items']:
-				#print(img)
-				print("{0[filename]}\t{0[length]:8,d}".format(img))
+			list_dir(limit, start)
 			return 0
 		elif (action == 'get') and id is not None:
 			imsto = ImSto()
@@ -99,15 +112,7 @@ def main(argv=None):
 			print ("found: {0.name}\t{0.length}".format(gf))
 			return 0
 		elif action == 'import':
-			if os.access(store_file, os.R_OK):
-				imsto = ImSto()
-				from _util import guess_mimetype
-				ctype = guess_mimetype(store_file)
-				with open(store_file) as fp:
-					ret = imsto.store(fp, ctype)
-					print ret
-			else:
-				print 'image {} not found or access deny'.format(store_file)
+			store_file(filename)
 			return 0
 		elif action == 'meta':
 			print 'meta for path: {}'.format(path)
@@ -125,8 +130,29 @@ def main(argv=None):
 		print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
 		#print >> sys.stderr, "\t for help use --help"
 		return 2
-
+"""
 
 if __name__ == "__main__":
-	sys.exit(main())
+	import argparse
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-i', '--add', metavar='filename', type=str, help='Import file to storeage')
+	parser.add_argument('-q', '--check', metavar='path', type=str, help='Test a file')
+	parser.add_argument('-v', '--verbose', action='store_true')
+	parser.add_argument('-l', '--list', action='store_true', help='List files')
+	#default=argparse.SUPPRESS
+	parser.add_argument('--limit', type=int, default=5)
+	parser.add_argument('--start', type=int, default=0)
+	parser.add_argument('--prefix', type=str, default='')
+	args, remaining = parser.parse_known_args()
+	#print args
+	if args.list:
+		list_dir(args.limit, args.start, prefix=args.prefix)
+	elif args.check:
+		imsto = ImSto()
+		print imsto.meta(filename=args.check)
+	elif args.add:
+		store_file(filename=args.add)
+	else:
+		parser.print_help()
+	#sys.exit(main())
 
