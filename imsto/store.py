@@ -74,13 +74,16 @@ class ImSto:
 		id = makeId(hashed)
 		print ('id: {}'.format(id))
 
-		# TODO: fix for support s3 front browse
-		if self.exists(id) or self.exists(hashed=hashed):
-			print ('id {} or hash {} exists!!'.format(id, hashed))
-			raise DuplicateError('already exists')
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		print ('new filename: %r' % filename)
+
+		# TODO: fix for support s3 front browse
+		if self.exists(id) or self.exists(hashed=hashed):
+			print ('id {} or hash {} exists!!'.format(id, hashed))
+			#raise DuplicateError('already exists')
+			return [True, id, filename]
+		
 		if ctype is None or ctype == '':
 			from _util import guess_mimetype
 			ctype = guess_mimetype(filename)
