@@ -121,7 +121,7 @@ def ImageHandler(environ, start_response):
 	"""main image url handler"""
 	SECTION = environ.get('IMSTO_SECTION', 'imsto')
 	#print 'engine_code: {0}'.format(engine_code)
-	imsto = ImSto(SECTION)
+	imsto = load_imsto(SECTION)
 	path = get_path_info(environ)
 	#print 'path: %s' % path
 	try:
@@ -174,7 +174,7 @@ def AdminHandler(environ, start_response):
 		
 		start_response('200 OK', [('Content-type', 'text/plain')])
 		
-		imsto = ImSto()
+		imsto = load_imsto()
 		gallery = imsto.browse(limit, start)
 		import datetime
 		dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
@@ -210,8 +210,8 @@ def StoredHandler(environ, start_response):
 	oper = form['oper']
 	print(oper)
 	section = form['section'] if form.has_key('section') else 'imsto'
-	from store import ImSto
-	imsto = ImSto(section)
+
+	imsto = load_imsto(section)
 	if oper.value == 'delete':
 		id = form['id']
 		return [json.dumps(imsto.delete(id.value))]

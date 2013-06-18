@@ -72,6 +72,11 @@ class Config(object):
 
 		return val
 
+	def sections(self):
+		return self.config.sections()
+
+	def has_section(self, section):
+		return self.config.has_section(section)
 
 
 if __name__ == '__main__':

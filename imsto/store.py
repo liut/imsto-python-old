@@ -17,11 +17,22 @@ from _base import base_convert
 from _util import *
 
 __all__ = [
-	'ImSto', 'guessImageType', 'makeId',
+	'load_imsto',
 	'EngineError', 'UrlError', 'DuplicateError', 
 ]
 
-class ImSto:
+def load_imsto(section='imsto'):
+	config = Config()
+	engine = config.get('engine', section)
+	if engine == 'mongodb':
+		return StoreEngineGridFs(section)
+	if engine == 's3':
+		return StoreEngineS3(section)
+	if engine == 'weedfs':
+		return StoreEngineWeedFs(section)
+	raise ValueError('bad engine_code')
+
+class StoreBase:
 	engine = None
 	_db = None
 	_fs = None
@@ -36,23 +47,17 @@ class ImSto:
 		self.fs_prefix = self.get_config('fs_prefix')
 		print 'section: {self.section}, engine: {self.engine}, fs_prefix: {self.fs_prefix}'.format(self=self)
 
-		if self.engine == 's3':
-			self.bucket = self.get_config('bucket_name')
-			self.AccessKey = self.get_config('s3_access_key')
-			self.SecretKey = self.get_config('s3_secret_key')
-
 	def get_config(self, key):
 		return self._config.get(key, self.section)
 		
-	def browse(self, limit=20, start=0):
+	def browse(self, limit=20, start=0, sort=None):
 		"""retrieve files from mongodb for gallery"""
 		#return fs().list()
-		sort = [('updateDate',DESCENDING)]
+		if sort is None or not isinstance(sort, list):
+			sort = [('uploadDate',DESCENDING)]
 
 		cursor = self.collection.find(limit=limit,skip=start,sort=sort)
-		items = []
-		for item in cursor:
-			items.append(makeItem(item))
+		items = [_make_item(item) for item in cursor]
 		return {'items':items,'total':cursor.count(),'url_prefix': self.get_config('url_prefix')}
 		
 	def store(self, file=None, ctype=None, content=None, name=None):
@@ -71,7 +76,7 @@ class ImSto:
 		print ('md5 hash: {}'.format(hashed))
 
 		# TODO: add for support (md5 + size) id
-		id = makeId(hashed)
+		id = _make_id(hashed)
 		print ('id: {}'.format(id))
 
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
@@ -83,7 +88,7 @@ class ImSto:
 			print ('id {} or hash {} exists!!'.format(id, hashed))
 			#raise DuplicateError('already exists')
 			return [True, id, filename]
-		
+
 		if ctype is None or ctype == '':
 			from _util import guess_mimetype
 			ctype = guess_mimetype(filename)
@@ -96,9 +101,9 @@ class ImSto:
 		spec = {'_id': id,'filename': filename, 'content_type': ctype}
 		if name:
 			spec['name'] = name
-		return [True, self.fs.put(data, **spec), filename]
+		return [True, self._put(data, **spec), filename]
 	
-	def meta(self, id=None, filename=None):
+	def get_meta(self, id=None, filename=None):
 		spec = None
 		if id:
 			spec = id
@@ -108,55 +113,35 @@ class ImSto:
 			print spec
 			item = self.collection.find_one(spec)
 			if item:
-			 	return makeItem(item)
-		
+			 	return _make_item(item)
 
-	def get(self, id=None, filename=None):
-		"""retrieve a file by id"""
-		if filename:
-			item = self.meta(filename=filename)
-			if item:
-				id = item.id
-		if id and self.exists(id):
-			return self.fs.get(id)
-		
-	def delete(self, id):
-		self.fs.delete(id)
-		if self.fs.exists(id):
-			return False
-		return True
+	def delete(self):
+		raise NotImplemented()
 
-	def exists(self, id=None, hashed=None, filename=None):
+	def _get(self, id):
+		raise NotImplemented()
+
+	def _put(self):
+		raise NotImplemented()
+
+	def _store_exists(self):
+		raise NotImplemented()
+
+	def exists(self, id=None, hashed=None, filename=None, *args, **kwargs):
 		"""check special hash value TODO: more args"""
-		if id:
-			return self.fs.exists(id)
+		print args
+		print kwargs
 		if hashed:
-			return self.collection.find_one([('md5', hashed)])
+			return True if self.collection.find_one([('md5', hashed)]) else False
 		if filename:
-			return self.collection.find_one(filename=filename)
+			return True if self.collection.find_one(filename=filename) else False
 
-		return False
-
-	@property
-	def fs(self):
-		if not self._fs:
-			if self.engine == 's3':
-				raise EngineError('s3 has not use for Fs')
-			import gridfs
-			self._fs = gridfs.GridFS(self.db,self.fs_prefix)
-
-		return self._fs
+		return self._store_exists(id, *args, **kwargs)
 
 	@property
 	def db(self):
 		if self._db is None:
-			host_or_uri = self.get_config('servers')
-			replica_set = self.get_config('replica_set')
-			if replica_set:
-				c = MongoReplicaSetClient(host_or_uri, replicaSet=replica_set,read_preference=ReadPreference.NEAREST)
-			else:
-				c = MongoClient(host_or_uri,read_preference=ReadPreference.NEAREST)
-			self._db = c[self.get_config('db_name')]
+			self._db = get_mongo_db(self.get_config('servers'), self.get_config('db_name'), self.get_config('replica_set'))
 		return self._db
 
 	@property
@@ -245,31 +230,24 @@ class ImSto:
 		return (dst_file, dst_path)
 
 	def prepare(self, filename, path, id):
-		if self.engine == 's3':
-			s = self.get_s3_bucket()
-			key = path
-			try:
-				file = s.get(key)
-			except KeyNotFound, e:
-				print('s3: key {} not found'.format(key))
-				return False
-		else:
-			file = self.get(id)
-			if file is None:
-				self.close()
-				print('imsto: id {} not found'.format(id))
-				return False
+		key = path if self.engine == 's3' else id
+
+		file = None
+		try:
+			file = self._get(key)
+		except Exception, e:
+			self.close()
+
+		if file is None:
+			print('imsto: {} not found'.format(key))
+			return False
+
 		save_file(file, filename)
 
 	def url(self, path, size='orig'):
 		url_prefix = self.get_config('url_prefix')
 		thumb_path = self.get_config('thumb_path')
 		return '{}/{}/{}/{}'.format(url_prefix.rstrip('/'), thumb_path.strip('/'), size, path)
-
-	def get_s3_bucket(self):
-		from simples3 import S3Bucket, KeyNotFound
-		s = S3Bucket(self.bucket, access_key=self.AccessKey, secret_key=self.SecretKey)
-		return s
 
 
 
@@ -285,38 +263,120 @@ class DuplicateError(Exception):
 	""" Invalid Url or path """
 	pass
 
+def get_mongo_db(host_or_uri, db_name, replica_set = None):
+	if replica_set:
+		c = MongoReplicaSetClient(host_or_uri, replicaSet=replica_set,read_preference=ReadPreference.NEAREST)
+	else:
+		c = MongoClient(host_or_uri,read_preference=ReadPreference.NEAREST)
+	return c[db_name]
 
-def makeId(hashed, size=None):
+def _make_id(hashed, size=None):
 	"""make mongo item id by file hash value"""
 	if size is None or size < 1:
 		return base_convert(hashed, 16, 36)
 	if not isinstance(size, Integral):
 		raise TypeError('expected a int, not ' + repr(size))
-	if size > 255:
-		size = size % 255
-	return base_convert('{}{:02x}'.format(hashed, size), 16, 36)
+	return base_convert('{}{:02x}'.format(hashed, size % 255), 16, 36)
 
-def makeItem(item):
+def _make_item(item):
+	'''convert mongo item to simple'''
 	newItem = item.copy()
 	newItem['id'] = newItem.pop('_id')
-	newItem['created'] = newItem.pop('uploadDate')
+	newItem['size'] = newItem.pop('length')
+	if newItem.has_key('uploadDate'):
+		newItem['created'] = newItem.pop('uploadDate')
+	if newItem.has_key('contentType'):
+		newItem['mime'] = newItem.pop('contentType')
+	if not newItem.has_key('filename') and newItem.has_key('path'):
+		newItem['filename'] = newItem.pop('path')
 	newItem.pop('chunkSize', None)
 	newItem.pop('app_id', None)
+	print newItem
 	return newItem
 
 
-sig_gif = b'GIF'
-sig_jpg = b'\xff\xd8\xff'
-#sig_png = b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a'
-sig_png = b"\211PNG\r\n\032\n"
 
-def guessImageType(data):
-	if data[:3] == sig_gif:
-		return 'gif'
-	elif data[:3] == sig_jpg:
-		return 'jpg'
-	elif data[:8] == sig_png:
-		return 'png'
-	else:
-		return None
+class StoreEngineGridFs(StoreBase):
+	"""docstring for StoreEngineGridFs"""
+	_db = None
+	_fs = None
+	def __init__(self, section):
+		StoreBase.__init__(self, section)
+
+	def _get(self, id=None, filename=None):
+		"""retrieve a file by id"""
+		if filename:
+			item = self.get_meta(filename=filename)
+			if item:
+				id = item.id
+		if id and self.exists(id):
+			return self.fs.get(id)
+	
+	def delete(self, id):
+		self.fs.delete(id)
+		if self.fs.exists(id):
+			return False
+		return True
+
+	def _put(self, data, **spec):
+		return self.fs.put(data, **spec)
+
+	def _store_exists(self, id):
+		print id
+		return self.fs.exists(id)
+
+	@property
+	def fs(self):
+		if not self._fs:
+			import gridfs
+			self._fs = gridfs.GridFS(self.db,self.fs_prefix)
+
+		return self._fs
+
+class StoreEngineS3(StoreBase):
+	"""docstring for StoreEngineS3"""
+	def __init__(self, section):
+		StoreBase.__init__(self, section)
+		self.bucket = self.get_config('bucket_name')
+		self.AccessKey = self.get_config('s3_access_key')
+		self.SecretKey = self.get_config('s3_secret_key')
+
+	def _get(self, key):
+		s = self.get_s3_bucket()
+		return s.get(key)
+
+	def delete(self, key):
+		raise NotImplemented()
+
+	def _put(self, data, filename, content_type):
+		'''key=filename'''
+		raise NotImplemented()
+
+	def _store_exists(self, key):
+		raise NotImplemented()
+
+	def get_s3_bucket(self):
+		from simples3 import S3Bucket, KeyNotFound
+		s = S3Bucket(self.bucket, access_key=self.AccessKey, secret_key=self.SecretKey)
+		return s
+
+class StoreEngineWeedFs(StoreBase):
+	"""docstring for StoreEngineWeedFs"""
+	def __init__(self, section, arg):
+		StoreBase.__init__(self, section)
+		self.arg = arg
+
+	def _get(self, id):
+		raise NotImplemented()
+
+	def delete(self):
+		raise NotImplemented()
+
+	def _put(self):
+		raise NotImplemented()
+
+	def _store_exists(self, fid):
+		raise NotImplemented()
+
+
 

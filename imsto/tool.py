@@ -10,7 +10,7 @@ Copyright (c) 2010 liut. All rights reserved.
 import sys
 import os
 import getopt
-from store import ImSto
+from store import load_imsto, Config
 
 help_message = '''
 Usage: store.py [options] [filename]
@@ -27,20 +27,22 @@ Options:
 
 '''
 
+section = 'imsto'
+
 class Usage(Exception):
 	def __init__(self, msg):
 		self.msg = msg
 
 def list_dir(limit=5,start=0,prefix=''):
-	imsto = ImSto()
+	imsto = load_imsto(section)
 	gallery = imsto.browse(limit, start)
 	for img in gallery['items']:
 		#print(img)
-		print("{0[filename]}\t{0[length]:8,d}".format(img))
+		print("{0[filename]}\t{0[size]:8,d}".format(img))
 
 def store_file(filename):
 	if os.access(filename, os.R_OK):
-		imsto = ImSto()
+		imsto = load_imsto(section)
 		from _util import guess_mimetype
 		ctype = guess_mimetype(filename)
 		with open(filename) as fp:
@@ -103,7 +105,7 @@ def main(argv=None):
 			list_dir(limit, start)
 			return 0
 		elif (action == 'get') and id is not None:
-			imsto = ImSto()
+			imsto = load_imsto()
 			if not imsto.exists(id):
 				print ('not found')
 				return 1
@@ -116,7 +118,7 @@ def main(argv=None):
 			return 0
 		elif action == 'meta':
 			print 'meta for path: {}'.format(path)
-			imsto = ImSto()
+			imsto = load_imsto()
 			print imsto.meta(path=path)
 		elif (action == 'test'):
 			print('filename: %r' % filename)
@@ -134,9 +136,14 @@ def main(argv=None):
 
 if __name__ == "__main__":
 	import argparse
-	parser = argparse.ArgumentParser()
+	config = Config()
+	parser = argparse.ArgumentParser(usage='%(prog)s [options]')
+	parser.add_argument('-s', '--section', metavar='section', default='imsto', choices=config.sections(), type=str, help='Special config section')
 	parser.add_argument('-i', '--add', metavar='filename', type=str, help='Import file to storeage')
-	parser.add_argument('-q', '--check', metavar='path', type=str, help='Test a file')
+	parser.add_argument('-q', '--query', metavar='[exist|meta]', type=str, choices=['exist', 'meta'], help='query a file')
+	parser.add_argument('-f', '--fetch', metavar='path', type=str, help='fetch a file')
+	parser.add_argument('--id', metavar='id', type=str, help='Special file id')
+	parser.add_argument('--path', metavar='path', type=str, help='Special file path')
 	parser.add_argument('-v', '--verbose', action='store_true')
 	parser.add_argument('-l', '--list', action='store_true', help='List files')
 	#default=argparse.SUPPRESS
@@ -145,11 +152,19 @@ if __name__ == "__main__":
 	parser.add_argument('--prefix', type=str, default='')
 	args, remaining = parser.parse_known_args()
 	#print args
+
+	section = args.section
+	print section
 	if args.list:
 		list_dir(args.limit, args.start, prefix=args.prefix)
-	elif args.check:
-		imsto = ImSto()
-		print imsto.meta(filename=args.check)
+	elif args.fetch:
+		imsto = load_imsto(section)
+		print imsto.load('orig/{}'.format(args.fetch))
+	elif args.query:
+		imsto = load_imsto(section)
+		method = imsto.get_meta if args.query == 'meta' else imsto.exists
+		print method
+		print method(args.id or None,filename=args.path or None)
 	elif args.add:
 		store_file(filename=args.add)
 	else:

@@ -12,7 +12,7 @@ from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
 MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
 
 __all__ = [
-'check_dirs', 'save_file', 
+'check_dirs', 'save_file', 'guessImageType', 
 'thumbnail_wand', 'thumb_image', 'watermark_image', 
 'guess_mimetype', 'password_hash'
 ]
@@ -36,6 +36,21 @@ def save_file(file, filename):
 	if statinfo.st_size == 0:
 		print('file size is zero, remove it')
 		os.remove(filename)
+
+sig_gif = b'GIF'
+sig_jpg = b'\xff\xd8\xff'
+#sig_png = b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a'
+sig_png = b"\211PNG\r\n\032\n"
+
+def guessImageType(data):
+	if data[:3] == sig_gif:
+		return 'gif'
+	elif data[:3] == sig_jpg:
+		return 'jpg'
+	elif data[:8] == sig_png:
+		return 'png'
+	else:
+		return None
 
 """
 test log

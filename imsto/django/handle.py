@@ -1,6 +1,6 @@
 
 import os
-from imsto import ImSto, UrlError, guess_mimetype
+from imsto import load_imsto, UrlError, guess_mimetype
 from django.http import HttpResponse, HttpResponseNotFound, StreamingHttpResponse
 from django.conf import settings
 
@@ -10,7 +10,7 @@ def ImageHandle(request, path):
 	environ = request.META
 	SECTION = get_section(request.META)
 
-	imsto = ImSto(SECTION)
+	imsto = load_imsto(SECTION)
 	try:
 		dst_file, dst_path = imsto.load(path)
 	except UrlError, e:

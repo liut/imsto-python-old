@@ -2,7 +2,7 @@ import os
 import itertools
 from django.core.files.storage import Storage
 from django.conf import settings
-from imsto import ImSto
+from imsto import load_imsto
 from urlparse import urljoin
 
 MIN_PATH_LEN = 28
@@ -21,7 +21,7 @@ class ImageStorage(Storage):
 		if base_url is None:
 			base_url = settings.MEDIA_URL
 		self.base_url = base_url
-		self.imsto = ImSto()
+		self.imsto = load_imsto()
 		self.field = 'image_path'
 
 	def delete(self, name):
