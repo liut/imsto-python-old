@@ -60,7 +60,8 @@ if __name__ == "__main__":
 		list_dir(args.limit, args.start, prefix=args.prefix)
 	elif args.fetch:
 		imsto = load_imsto(section)
-		print imsto.load('orig/{}'.format(args.fetch))
+		_file, _path = imsto.load('orig/{}'.format(args.fetch))
+		print _path
 	elif args.query:
 		imsto = load_imsto(section)
 		method = imsto.get_meta if args.query == 'meta' else imsto.exists
