@@ -1,3 +1,10 @@
+# encoding: utf-8
+"""
+handlers.py
+
+Created by liut on 2010-12-04.
+Copyright (c) 2010-2013 liut. All rights reserved.
+"""
 
 import os,re
 import json
@@ -120,7 +127,7 @@ class AuthWrap(object):
 def ImageHandler(environ, start_response):
 	"""main image url handler"""
 	SECTION = environ.get('IMSTO_SECTION', 'imsto')
-	#print 'engine_code: {0}'.format(engine_code)
+	print 'section from env: {0}'.format(SECTION)
 	imsto = load_imsto(SECTION)
 	path = get_path_info(environ)
 	#print 'path: %s' % path
@@ -154,16 +161,17 @@ def ImageHandler(environ, start_response):
 def AdminHandler(environ, start_response):
 	path = get_path_info(environ)
 	
-	man_regex = r'(env|Gallery|Stored)$'
+	man_regex = r'(env|Gallery|Stored|Sections)$'
 	match = re.search(man_regex, path)
 	#print('match: {0}'.format(match))
 	if match is None:
 		return not_found(environ, start_response)
 	
+	from cgi import FieldStorage
+	form = FieldStorage(environ=environ)
+	section = form.getfirst('roof', 'imsto')
 	action, = match.groups()
 	if (action == 'Gallery'):
-		from cgi import FieldStorage
-		form = FieldStorage(environ=environ)
 		limit = 20
 		start = 0
 		if form.has_key("page") and form["page"].value != "":
@@ -172,9 +180,9 @@ def AdminHandler(environ, start_response):
 				page = 1
 			start = limit * (page - 1)
 		
-		start_response('200 OK', [('Content-type', 'text/plain')])
+		start_response('200 OK', [('Content-type', 'text/javascript')])
 		
-		imsto = load_imsto()
+		imsto = load_imsto(section)
 		gallery = imsto.browse(limit, start)
 		import datetime
 		dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
@@ -187,6 +195,10 @@ def AdminHandler(environ, start_response):
 		#return ['Stored']
 	elif  (action == 'env'):
 		return print_env(environ, start_response)
+	elif action == 'Sections':
+		start_response('200 OK', [('Content-type', 'text/javascript')])
+		config = Config()
+		return [json.dumps(config.sections())]
 	
 	start_response('200 OK', [('Content-type', 'text/plain')])
 	return [path_info]
@@ -253,7 +265,7 @@ AuthAdminHandle = ErrorWrap(AuthWrap(AdminHandler))
 
 # map urls to functions
 default_urls = [
-	(r't/(.+)$', ImageHandler),
+	(r't\d?/(.+)$', ImageHandler),
 	(r'Manage/(.*)$', AdminHandler)
 ]
 

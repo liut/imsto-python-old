@@ -3,7 +3,7 @@
 ImSto Config
 
 Created by liut on 2010-12-15.
-Copyright (c) 2010 liut. All rights reserved.
+Copyright (c) 2010-2013 liut. All rights reserved.
 """
 
 __all__ = ['Config']

@@ -5,10 +5,11 @@ store.py
 imsto: core module
 
 Created by liut on 2010-12-16.
-Copyright (c) 2010 liut. All rights reserved.
+Copyright (c) 2010-2013 liut. All rights reserved.
 """
 
-import os,re
+import os,re,datetime
+from urlparse import urljoin
 from hashlib import md5
 from numbers import Integral
 from pymongo import ASCENDING, DESCENDING, MongoClient, MongoReplicaSetClient, ReadPreference
@@ -24,6 +25,7 @@ __all__ = [
 def load_imsto(section='imsto'):
 	config = Config()
 	engine = config.get('engine', section)
+	print 'loading {} engine: {}'.format(section, engine)
 	if engine == 'mongodb':
 		return StoreEngineGridFs(section)
 	if engine == 's3':
@@ -45,12 +47,12 @@ class StoreBase:
 
 		self.engine = self.get_config('engine')
 		self.fs_prefix = self.get_config('fs_prefix')
-		print 'section: {self.section}, engine: {self.engine}, fs_prefix: {self.fs_prefix}'.format(self=self)
+		print 'init section: {self.section}, engine: {self.engine}, fs_prefix: {self.fs_prefix}'.format(self=self)
 
 	def get_config(self, key):
 		return self._config.get(key, self.section)
 		
-	def browse(self, limit=20, start=0, sort=None):
+	def browse(self, limit=20, start=0, sort=None, only_items = False):
 		"""retrieve files from mongodb for gallery"""
 		#return fs().list()
 		if sort is None or not isinstance(sort, list):
@@ -58,15 +60,30 @@ class StoreBase:
 
 		cursor = self.collection.find(limit=limit,skip=start,sort=sort)
 		items = [_make_item(item) for item in cursor]
-		return {'items':items,'total':cursor.count(),'url_prefix': self.get_config('url_prefix')}
-		
+		if only_items:
+			return items
+		url_prefix = urljoin(self.get_config('url_prefix'), self.get_config('thumb_path'))
+		return {'items':items,'total':cursor.count(),'url_prefix': url_prefix + '/'}
+
+	def count(self):
+		return self.collection.count();
+
+	# def __iter__(self):
+	# 	self.__cursor = self.collection.find(limit=0,skip=0,sort=[('uploadDate',DESCENDING)])
+	# 	return self
+	# def next(self):
+	# 	if self.__cursor:
+	# 		return _make_item(self.__cursor.next())
+	# 	raise StopIteration
+
 	def store(self, file=None, ctype=None, content=None, name=None):
 		"""save a file-like to mongodb"""
 		if content is None and not hasattr(file, 'read'):
 			raise TypeError('invalid file-like object')
 
 		data = content if content is not None else file.read()
-		if (len(data) > int(self.get_config('max_file_size'))):
+		size = len(data)
+		if (size > int(self.get_config('max_file_size'))):
 			raise ValueError('file: {} too big'.format(name))
 		ext = guessImageType(data[:32])
 		if ext is None:
@@ -98,7 +115,7 @@ class StoreBase:
 			raise NotImplementedError()
 
 		# save to mongodb
-		spec = {'_id': id,'filename': filename, 'content_type': ctype}
+		spec = {'_id': id,'filename': filename, 'hash': hashed, 'content_type': ctype, 'content_length': size}
 		if name:
 			spec['name'] = name
 		return [True, self._put(data, **spec), filename]
@@ -110,10 +127,19 @@ class StoreBase:
 		elif filename:
 			spec = {'filename': filename}
 		if spec:
-			print spec
+			print 'spec %s' % spec
 			item = self.collection.find_one(spec)
 			if item:
 			 	return _make_item(item)
+
+	def _save_meta(self, id, spec):
+		'''mongo special meta data'''
+		#if not hasattr(spec, '_id'):
+		#	spec['_id'] = id
+		if not hasattr(spec, 'created'):
+			spec['created'] = datetime.datetime.utcnow()
+
+		return self.collection.update({'_id': id}, spec, upsert=True)
 
 	def delete(self):
 		raise NotImplemented()
@@ -121,22 +147,22 @@ class StoreBase:
 	def _get(self, id):
 		raise NotImplemented()
 
-	def _put(self):
+	def _put(self, data, **spec):
 		raise NotImplemented()
 
-	def _store_exists(self):
+	def _store_exists(self, id=None, *args, **kwargs):
 		raise NotImplemented()
 
 	def exists(self, id=None, hashed=None, filename=None, *args, **kwargs):
 		"""check special hash value TODO: more args"""
-		print args
-		print kwargs
+		#print args
+		#print kwargs
 		if hashed:
 			return True if self.collection.find_one([('md5', hashed)]) else False
 		if filename:
 			return True if self.collection.find_one(filename=filename) else False
 
-		return self._store_exists(id, *args, **kwargs)
+		return self._store_exists(id, hashed=hashed, filename=filename, *args, **kwargs)
 
 	@property
 	def db(self):
@@ -239,7 +265,7 @@ class StoreBase:
 			self.close()
 
 		if file is None:
-			print('imsto: {} not found'.format(key))
+			print('prepare: {} not found'.format(key))
 			return False
 
 		save_file(file, filename)
@@ -282,7 +308,10 @@ def _make_item(item):
 	'''convert mongo item to simple'''
 	newItem = item.copy()
 	newItem['id'] = newItem.pop('_id')
-	newItem['size'] = newItem.pop('length')
+	if newItem.has_key('length'):
+		newItem['size'] = newItem.pop('length')
+	elif newItem.has_key('content_length'):
+		newItem['size'] = newItem.pop('content_length')
 	if newItem.has_key('uploadDate'):
 		newItem['created'] = newItem.pop('uploadDate')
 	if newItem.has_key('contentType'):
@@ -291,7 +320,7 @@ def _make_item(item):
 		newItem['filename'] = newItem.pop('path')
 	newItem.pop('chunkSize', None)
 	newItem.pop('app_id', None)
-	print newItem
+	# print newItem
 	return newItem
 
 
@@ -321,8 +350,8 @@ class StoreEngineGridFs(StoreBase):
 	def _put(self, data, **spec):
 		return self.fs.put(data, **spec)
 
-	def _store_exists(self, id):
-		print id
+	def _store_exists(self, id=None, *args, **kwargs):
+		#print id
 		return self.fs.exists(id)
 
 	@property
@@ -350,9 +379,11 @@ class StoreEngineS3(StoreBase):
 
 	def _put(self, data, filename, content_type):
 		'''key=filename'''
+		# TODO: save to s3
+		# TODO: save meta, than return new id
 		raise NotImplemented()
 
-	def _store_exists(self, key):
+	def _store_exists(self, id=None, *args, **kwargs):
 		raise NotImplemented()
 
 	def get_s3_bucket(self):
@@ -360,23 +391,49 @@ class StoreEngineS3(StoreBase):
 		s = S3Bucket(self.bucket, access_key=self.AccessKey, secret_key=self.SecretKey)
 		return s
 
+WEED_HOST = 'weed_vol_host'
+WEED_FID = 'weed_fid'
+
 class StoreEngineWeedFs(StoreBase):
 	"""docstring for StoreEngineWeedFs"""
-	def __init__(self, section, arg):
+	def __init__(self, section):
 		StoreBase.__init__(self, section)
-		self.arg = arg
+		from weedfs import WeedClient
+		self.client = WeedClient()
 
 	def _get(self, id):
-		raise NotImplemented()
+		print '_get {}'.format(id)
+		item = self.get_meta(id)
+		if not item.has_key(WEED_HOST) or not item.has_key(WEED_HOST):
+			raise ValueError('the entry has no special value ' + WEED_HOST + ' and ' + WEED_FID)
+		volume_host, fid = item[WEED_HOST], item[WEED_FID]
+		ctype, size, content = self.client.retrieve(volume_host, fid)
+		print 'weed retrieved: %s %s' % (ctype, size)
+		if content:
+			from StringIO import StringIO
+			return StringIO(content)
+		raise ValueError('weed client.retrieve error: invalid response')
 
 	def delete(self):
 		raise NotImplemented()
 
-	def _put(self):
-		raise NotImplemented()
+	def _put(self, data, **spec):
+		volume_host, fid = self.client.assign()
+		ret = self.client.store(volume_host, fid, content=data, name=spec['filename'], content_type=spec['content_type'])
+		if isinstance(ret, int) and ret > 0:
+			print 'saved {}/{} size {} bytes'.format(volume_host, fid, ret)
+			spec[WEED_HOST] = volume_host
+			spec[WEED_FID] = fid
+			self._save_meta(spec['_id'], spec)
+			return spec['_id']
+		
 
-	def _store_exists(self, fid):
-		raise NotImplemented()
+	def _store_exists(self, id=None, *args, **kwargs):
+		if hasattr(kwargs, WEED_HOST) and hasattr(kwargs, WEED_FID):
+			ctype, size = self.client.retrieve(kwargs[WEED_HOST],kwargs[WEED_FID], head=True)
+			print 'exists %s %s' % (ctype, size)
+			return True
+		return False
 
 
 

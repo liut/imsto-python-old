@@ -3,7 +3,7 @@
 image.py
 
 Created by liut on 2010-12-04.
-Copyright (c) 2010-2012 liut. All rights reserved.
+Copyright (c) 2010-2013 liut. All rights reserved.
 """
 
 __all__ = ['SimpImage']

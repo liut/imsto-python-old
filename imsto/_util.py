@@ -3,7 +3,7 @@
 _util.py
 
 Created by liut on 2010-12-04.
-Copyright (c) 2010 liut. All rights reserved.
+Copyright (c) 2010-2013 liut. All rights reserved.
 """
 
 import os
@@ -14,7 +14,8 @@ MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageComp
 __all__ = [
 'check_dirs', 'save_file', 'guessImageType', 
 'thumbnail_wand', 'thumb_image', 'watermark_image', 
-'guess_mimetype', 'password_hash'
+'guess_mimetype', 'password_hash',
+'encode_upload'
 ]
 
 def check_dirs(filename):
@@ -183,6 +184,53 @@ def password_hash(username, password):
 	from hashlib import sha1
 	return sha1(':'.join([username.lower(), password])).hexdigest()
 
+
+def encode_upload(file=None, content=None, content_type=None, name=None, ext_data=[]):
+	"""encode a upload file form
+		Learn from: http://mancoosi.org/~abate/upload-file-using-httplib
+	"""
+	BOUNDARY = '----------bundary------'
+	CRLF = '\r\n'
+	body = []
+	# Add the metadata about the upload first
+	for key, value in ext_data:
+		body.extend(
+		  ['--' + BOUNDARY,
+		   'Content-Disposition: form-data; name="%s"' % key,
+		   '',
+		   value,
+		   ])
+	# Now add the file itself
+	if content is None:
+		if file is None:
+			raise ValueError('need file or content argument')
+	 	if hasattr(file, 'read'):
+			content = file.read()
+		else:
+			name = os.path.basename(file)
+			f = open(file, 'rb')
+			content = f.read()
+			f.close()
+
+	if name is None:
+		ext = guessImageType(content[:32])
+		name = 'data.{}'.format(ext)
+
+	if content_type is None:
+		content_type = guess_mimetype(name)
+
+	body.extend(
+	  ['--' + BOUNDARY,
+	   'Content-Disposition: form-data; name="file"; filename="%s"'
+	   % name,
+	   # The upload server determines the mime-type, no need to set it.
+	   'Content-Type: %s' % content_type,
+	   '',
+	   content,
+	   ])
+	# Finalize the form body
+	body.extend(['--' + BOUNDARY + '--', ''])
+	return 'multipart/form-data; boundary=%s' % BOUNDARY, CRLF.join(body)
 
 
 

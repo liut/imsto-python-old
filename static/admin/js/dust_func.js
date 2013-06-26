@@ -195,3 +195,31 @@ function alertAjaxResult(data, callback)
 	Dust.alert(msg, '', callback);
 }
 
+(function($) {
+		/**
+	 * example: <div id="land_box"></div>
+	 * $('#land_box').radioButtons({data: Catalog.all.land, name: 'land'});
+	 */
+	$.fn.radioButtons = function(options) {
+		options = $.extend({
+			data: {'0':'Choice 1','1':'Choice 2'},
+			name: 'radio',
+			selected: '',
+			skipEmpty: true
+		}, options);
+		var self = $(this).empty(), i = 0;
+		for( var k in options.data) {
+			if (options.skipEmpty && k === "") continue;
+			var id = 'ws_'+options.name+'_'+i, text = options.data[k], radio =
+			$("<input />").attr("id", id)
+				.attr("type", "radio").attr("name", options.name)
+				.attr("value", k);
+			if (k === options.selected) radio.attr('checked', 'checked');
+			radio.appendTo(self);
+			$("<label />").attr("for", id).text(text).appendTo(self);
+			i ++;
+		}
+		self.buttonset();
+		return this;
+	};
+})(jQuery);

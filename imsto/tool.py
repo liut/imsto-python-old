@@ -4,12 +4,11 @@
 tool.py
 
 Created by liut on 2010-12-24.
-Copyright (c) 2010 liut. All rights reserved.
+Copyright (c) 2010-2013 liut. All rights reserved.
 """
 
 import sys
 import os
-import getopt
 from store import load_imsto, Config
 
 
@@ -19,6 +18,11 @@ section = 'imsto'
 def list_dir(limit=5,start=0,prefix=''):
 	imsto = load_imsto(section)
 	gallery = imsto.browse(limit, start)
+	if gallery['total'] == 0:
+		print 'total 0, empty'
+		return
+
+	print 'total {}'.format(gallery['total'])
 	for img in gallery['items']:
 		#print(img)
 		print("{0[filename]}\t{0[size]:8,d}".format(img))
