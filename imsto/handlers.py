@@ -266,7 +266,7 @@ AuthAdminHandle = ErrorWrap(AuthWrap(AdminHandler))
 # map urls to functions
 default_urls = [
 	(r't\d?/(.+)$', ImageHandler),
-	(r'Manage/(.*)$', AdminHandler)
+	(r'Manage/(.*)$', AuthWrap(AdminHandler))
 ]
 
 def application(environ, start_response):
