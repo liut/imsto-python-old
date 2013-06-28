@@ -59,7 +59,7 @@ class StoreBase:
 			sort = [('uploadDate',DESCENDING)]
 
 		cursor = self.collection.find(limit=limit,skip=start,sort=sort)
-		items = [_make_item(item) for item in cursor]
+		items = [StoreItem(self, item) for item in cursor]
 		if only_items:
 			return items
 		url_prefix = urljoin(self.get_config('url_prefix'), self.get_config('thumb_path'))
@@ -73,11 +73,11 @@ class StoreBase:
 	# 	return self
 	# def next(self):
 	# 	if self.__cursor:
-	# 		return _make_item(self.__cursor.next())
+	# 		return StoreItem(self, self.__cursor.next())
 	# 	raise StopIteration
 
 	def store(self, file=None, ctype=None, content=None, name=None):
-		"""save a file-like to mongodb"""
+		"""save a file-like item"""
 		if content is None and not hasattr(file, 'read'):
 			raise TypeError('invalid file-like object')
 
@@ -118,7 +118,9 @@ class StoreBase:
 		spec = {'_id': id,'filename': filename, 'hash': hashed, 'content_type': ctype, 'content_length': size}
 		if name:
 			spec['name'] = name
-		return [True, self._put(data, **spec), filename]
+		rr = self._put(data, **spec)
+		if rr:
+			return [True, rr, filename]
 	
 	def get_meta(self, id=None, filename=None):
 		spec = None
@@ -130,7 +132,7 @@ class StoreBase:
 			print 'spec %s' % spec
 			item = self.collection.find_one(spec)
 			if item:
-			 	return _make_item(item)
+			 	return StoreItem(self, item)
 
 	def _save_meta(self, id, spec):
 		'''mongo special meta data'''
@@ -204,10 +206,11 @@ class StoreBase:
 
 		if not os.path.exists(org_file):
 			print('fetching file: {}'.format(org_path))
-			ret = self.prepare(org_file, path=org_path, id=id)
-			if ret is False:
+			file = self.fetch(id, path=org_path)
+			if file is False:
 				print('fetch failed')
 				raise UrlError('id {} not found'.format(id))
+			save_file(file, org_file)
 
 		if not os.path.exists(org_file):
 			raise UrlError('file not found')
@@ -255,26 +258,67 @@ class StoreBase:
 
 		return (dst_file, dst_path)
 
-	def prepare(self, filename, path, id):
+	def fetch(self, id, path):
 		key = path if self.engine == 's3' else id
 
-		file = None
 		try:
-			file = self._get(key)
+			return self._get(key)
 		except Exception, e:
+			print('prepare: {} not found'.format(key))
+			raise e
+		finally:
 			self.close()
 
-		if file is None:
-			print('prepare: {} not found'.format(key))
-			return False
-
-		save_file(file, filename)
 
 	def url(self, path, size='orig'):
 		url_prefix = self.get_config('url_prefix')
 		thumb_path = self.get_config('thumb_path')
 		return '{}/{}/{}/{}'.format(url_prefix.rstrip('/'), thumb_path.strip('/'), size, path)
 
+class StoreItem(dict):
+	"""docstring for Item"""
+	imsto = None
+	id = None
+	def __init__(self, imsto, meta):
+		self.imsto = imsto
+		if isinstance(meta, dict):
+			item = self._fix_meta(meta)
+			for key, value in item.iteritems():
+				self[key.lower()] = value
+				if key == 'id':
+					self.id = value
+			if not self.has_key('name') or self['name'] is None:
+				self.name = self.id + guess_ext(self['mime'])
+
+	def __getattr__(self, name):
+		if name == 'dict':
+			return self
+		else:
+			return self.get(name, None)
+
+	def _fix_meta(self, item):
+		'''convert mongo item to simple'''
+		item['id'] = item.pop('_id')
+		if item.has_key('length'):
+			item['size'] = item.pop('length')
+		elif item.has_key('content_length'):
+			item['size'] = item.pop('content_length')
+		if item.has_key('uploadDate'):
+			item['created'] = item.pop('uploadDate')
+		if item.has_key('contentType'):
+			item['mime'] = item.pop('contentType')
+		if item.has_key('content_type'):
+			item['mime'] = item.pop('content_type')
+		if not item.has_key('filename') and item.has_key('path'):
+			item['filename'] = item.pop('path')
+		item.pop('chunkSize', None)
+		item.pop('app_id', None)
+		# print item
+		return item
+
+	@property
+	def file(self):
+		return self.imsto._get(self)
 
 
 class EngineError(Exception):
@@ -304,25 +348,6 @@ def _make_id(hashed, size=None):
 		raise TypeError('expected a int, not ' + repr(size))
 	return base_convert('{}{:02x}'.format(hashed, size % 255), 16, 36)
 
-def _make_item(item):
-	'''convert mongo item to simple'''
-	newItem = item.copy()
-	newItem['id'] = newItem.pop('_id')
-	if newItem.has_key('length'):
-		newItem['size'] = newItem.pop('length')
-	elif newItem.has_key('content_length'):
-		newItem['size'] = newItem.pop('content_length')
-	if newItem.has_key('uploadDate'):
-		newItem['created'] = newItem.pop('uploadDate')
-	if newItem.has_key('contentType'):
-		newItem['mime'] = newItem.pop('contentType')
-	if not newItem.has_key('filename') and newItem.has_key('path'):
-		newItem['filename'] = newItem.pop('path')
-	newItem.pop('chunkSize', None)
-	newItem.pop('app_id', None)
-	# print newItem
-	return newItem
-
 
 
 class StoreEngineGridFs(StoreBase):
@@ -332,12 +357,9 @@ class StoreEngineGridFs(StoreBase):
 	def __init__(self, section):
 		StoreBase.__init__(self, section)
 
-	def _get(self, id=None, filename=None):
-		"""retrieve a file by id"""
-		if filename:
-			item = self.get_meta(filename=filename)
-			if item:
-				id = item.id
+	def _get(self, id):
+		if isinstance(id, StoreItem):
+			id = id.id
 		if id and self.exists(id):
 			return self.fs.get(id)
 	
@@ -364,15 +386,13 @@ class StoreEngineGridFs(StoreBase):
 
 class StoreEngineS3(StoreBase):
 	"""docstring for StoreEngineS3"""
+	_bucket = None
 	def __init__(self, section):
 		StoreBase.__init__(self, section)
-		self.bucket = self.get_config('bucket_name')
-		self.AccessKey = self.get_config('s3_access_key')
-		self.SecretKey = self.get_config('s3_secret_key')
 
-	def _get(self, key):
-		s = self.get_s3_bucket()
-		return s.get(key)
+	def _get(self, id):
+		item = id if isinstance(id, StoreItem) else self.get_meta(id)
+		return self.bucket.get(key)
 
 	def delete(self, key):
 		raise NotImplemented()
@@ -386,10 +406,15 @@ class StoreEngineS3(StoreBase):
 	def _store_exists(self, id=None, *args, **kwargs):
 		raise NotImplemented()
 
-	def get_s3_bucket(self):
-		from simples3 import S3Bucket, KeyNotFound
-		s = S3Bucket(self.bucket, access_key=self.AccessKey, secret_key=self.SecretKey)
-		return s
+	@property
+	def bucket(self):
+		if self._bucket is None:
+			from simples3 import S3Bucket, KeyNotFound
+			bucket_name = self.get_config('bucket_name')
+			access_key = self.get_config('s3_access_key')
+			secret_key = self.get_config('s3_secret_key')
+			self._bucket = S3Bucket(bucket_name, access_key=access_key, secret_key=secret_key)
+		return self._bucket
 
 WEED_HOST = 'weed_vol_host'
 WEED_FID = 'weed_fid'
@@ -403,7 +428,7 @@ class StoreEngineWeedFs(StoreBase):
 
 	def _get(self, id):
 		print '_get {}'.format(id)
-		item = self.get_meta(id)
+		item = id if isinstance(id, StoreItem) else self.get_meta(id)
 		if not item.has_key(WEED_HOST) or not item.has_key(WEED_HOST):
 			raise ValueError('the entry has no special value ' + WEED_HOST + ' and ' + WEED_FID)
 		volume_host, fid = item[WEED_HOST], item[WEED_FID]
@@ -426,6 +451,7 @@ class StoreEngineWeedFs(StoreBase):
 			spec[WEED_FID] = fid
 			self._save_meta(spec['_id'], spec)
 			return spec['_id']
+		print 'store error: %s' % ret
 		
 
 	def _store_exists(self, id=None, *args, **kwargs):

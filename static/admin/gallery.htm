@@ -85,7 +85,7 @@
 							alt += '上传时间: ' + item.created;
 						}
 						var _li = $("<li></li>").attr("id", "li_iid" + item.id).appendTo("#image-list"), 
-							_a = $("<a></a>").attr("href", url_prefix + item.filename).attr("title", title+" ( "+alt+" )").attr('rel','box'),
+							_a = $("<a></a>").attr("href", url_prefix + 'orig/' + item.filename).attr("title", title+" ( "+alt+" )").attr('rel','box'),
 							_img = $("<img/>").attr("src", url_prefix + 's120/' + item.filename).attr('alt',alt).attr("class", ""),
 							_txt = $("<span></span>").attr("class", "lbl").attr("title",item.size).text(format_size(item.size)),
 							_btn = $("<span></span>").attr("class", "btn btn_delete ui-corner-all ui-icon ui-icon-trash").attr("title", "删除")

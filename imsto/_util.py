@@ -14,7 +14,7 @@ MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageComp
 __all__ = [
 'check_dirs', 'save_file', 'guessImageType', 
 'thumbnail_wand', 'thumb_image', 'watermark_image', 
-'guess_mimetype', 'password_hash',
+'guess_mimetype', 'guess_ext', 'password_hash',
 'encode_upload'
 ]
 
@@ -154,6 +154,13 @@ def guess_mimetype(fn, default="application/octet-stream"):
 	if ext == "jpg": ext = "jpeg"
 	return mimetypes.guess_type(bfn + "." + ext)[0] or default
 
+def guess_ext(mime):
+	import mimetypes
+	ext = mimetypes.guess_extension(mime)
+	if ext == '.jpe':
+		return '.jpg'
+	return ext
+
 def watermark_image(filename, distname):
 	from image import SimpImage
 	im = SimpImage(filename)
@@ -191,6 +198,7 @@ def encode_upload(file=None, content=None, content_type=None, name=None, ext_dat
 	"""
 	BOUNDARY = '----------bundary------'
 	CRLF = '\r\n'
+	#print CRLF
 	body = []
 	# Add the metadata about the upload first
 	for key, value in ext_data:
@@ -212,6 +220,8 @@ def encode_upload(file=None, content=None, content_type=None, name=None, ext_dat
 			content = f.read()
 			f.close()
 
+	#print 'type content: %s, len content: %s' % (type(content), len(content))
+
 	if name is None:
 		ext = guessImageType(content[:32])
 		name = 'data.{}'.format(ext)
@@ -221,10 +231,9 @@ def encode_upload(file=None, content=None, content_type=None, name=None, ext_dat
 
 	body.extend(
 	  ['--' + BOUNDARY,
-	   'Content-Disposition: form-data; name="file"; filename="%s"'
-	   % name,
+	   str('Content-Disposition: form-data; name="file"; filename="%s"' % name),
 	   # The upload server determines the mime-type, no need to set it.
-	   'Content-Type: %s' % content_type,
+	   str('Content-Type: %s' % content_type),
 	   '',
 	   content,
 	   ])

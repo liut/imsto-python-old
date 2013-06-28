@@ -23,9 +23,10 @@ def list_dir(limit=5,start=0,prefix=''):
 		return
 
 	print 'total {}'.format(gallery['total'])
-	for img in gallery['items']:
-		#print(img)
-		print("{0[filename]}\t{0[size]:8,d}".format(img))
+	for item in gallery['items']:
+		#print hasattr(item.file, 'read')
+		#print(item)
+		print("{0[filename]}\t{0[size]:8,d}".format(item))
 
 def store_file(filename):
 	if os.access(filename, os.R_OK):

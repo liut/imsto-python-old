@@ -54,7 +54,7 @@ class WeedClient(object):
 		#{"count":1,"fid":"2,753b19e78fe6","publicUrl":"127.0.0.1:9334","url":"localhost:9334"}
 		first, second, result = self._request(url)
 		#volume_host, fid = 
-		if isinstance(result, dict):
+		if first >= 200 and first < 300 and isinstance(result, dict):
 			return result['publicUrl'], result['fid']
 		print 'error assign {}: {}, content: {}'.format(first, second, result)
 
@@ -89,10 +89,11 @@ class WeedClient(object):
 		content_type, body = encode_upload(file=file, content=content, name=name, content_type=content_type)
 		headers = { 'Content-Type': content_type }
 		url = 'http://{}/{}'.format(volume_host, fid)
-		ret = self._request(url, 'POST', body=body, headers=headers)
-		print type(ret)
-		if isinstance(ret, dict):
-			return ret['size']
+		first, second, result = self._request(url, 'POST', body=body, headers=headers)
+		print type(result)
+		print result
+		if isinstance(result, dict):
+			return result['size']
 
 
 
