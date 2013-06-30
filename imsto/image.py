@@ -28,9 +28,11 @@ class SimpImage(object):
 	_max_width, _max_height = 0, 0
 
 	"""docstring for ClassName"""
-	def __init__(self, file = None, image=None):
+	def __init__(self, file = None, image=None, blob=None):
 		if isinstance(image, SimpImage):
 			self._wand = CloneMagickWand(image.wand)
+		elif blob:
+			MagickReadImageBlob( self._wand, blob, len( blob ) )
 		else:
 			self._wand = NewMagickWand()
 			self.read(file)

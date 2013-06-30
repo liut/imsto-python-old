@@ -391,7 +391,16 @@ class StoreEngineS3(StoreBase):
 		StoreBase.__init__(self, section)
 
 	def _get(self, id):
-		item = id if isinstance(id, StoreItem) else self.get_meta(id)
+		if isinstance(id, str):
+			if id.rfind('.') > 0:
+				key = id
+			else:
+				item = self.get_meta(id)
+				key = item.filename
+		elif isinstance(id, StoreItem):
+			key = id.filename
+		else:
+			raise ValueError('invalid id or key')
 		return self.bucket.get(key)
 
 	def delete(self, key):

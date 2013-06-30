@@ -12,8 +12,8 @@ from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
 MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
 
 __all__ = [
-'check_dirs', 'save_file', 'guessImageType', 
-'thumbnail_wand', 'thumb_image', 'watermark_image', 
+'check_dirs', 'save_file', 'identify_image', 'guessImageType', 
+'identify_image', 'thumb_image', 'watermark_image', 
 'guess_mimetype', 'guess_ext', 'password_hash',
 'encode_upload'
 ]
@@ -97,6 +97,12 @@ def identify_wand(imagefile):
 	DestroyMagickWand(magick_wand)
 
 	return info
+
+def identify_image(imagefile, method = 'wand'):
+	if method == 'wand':
+		return identify_wand(imagefile)
+	if method == 'shell':
+		return identify_shell(imagefile)
 
 def thumbnail_wand(filename, width, height, distname, mode='s'):
 	from image import SimpImage
