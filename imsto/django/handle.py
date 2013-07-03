@@ -14,9 +14,9 @@ def ImageHandle(request, path):
 	try:
 		dst_file, dst_path = imsto.load(path)
 	except UrlError, e:
-		return HttpResponseNotFound(e.message)
+		return HttpResponseNotFound(str(e))
 	except Exception, e:
-		raise
+		raise e
 	finally:
 		imsto.close()
 

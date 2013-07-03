@@ -101,7 +101,11 @@ class StoreBase:
 		print ('new filename: %r' % filename)
 
 		# TODO: fix for support s3 front browse
-		if self.exists(id) or self.exists(hashed=hashed):
+		_exists_id = self.exists(id) or self.exists(hashed=hashed)
+		if _exists_id:
+			id = _exists_id
+			match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
+			filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 			print ('id {} or hash {} exists!!'.format(id, hashed))
 			#raise DuplicateError('already exists')
 			return [True, id, filename]
@@ -159,12 +163,19 @@ class StoreBase:
 		"""check special hash value TODO: more args"""
 		#print args
 		#print kwargs
+		if id and self.collection.find_one({"_id": id}):
+			return id
 		if hashed:
-			return True if self.collection.find_one([('md5', hashed)]) else False
+			doc = self.collection.find_one({'md5': hashed})
+			if doc:
+				return doc['_id']
 		if filename:
-			return True if self.collection.find_one(filename=filename) else False
+			doc = self.collection.find_one(filename=filename)
+			if doc:
+				return doc['_id']
 
-		return self._store_exists(id, hashed=hashed, filename=filename, *args, **kwargs)
+		if self._store_exists(id, hashed=hashed, filename=filename, *args, **kwargs):
+			return id
 
 	@property
 	def db(self):
@@ -207,7 +218,7 @@ class StoreBase:
 		if not os.path.exists(org_file):
 			print('fetching file: {}'.format(org_path))
 			file = self.fetch(id, path=org_path)
-			if file is False:
+			if file is None:
 				print('fetch failed')
 				raise UrlError('id {} not found'.format(id))
 			save_file(file, org_file)
