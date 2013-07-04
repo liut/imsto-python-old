@@ -34,7 +34,7 @@ def store_file(filename):
 		from _util import guess_mimetype
 		ctype = guess_mimetype(filename)
 		with open(filename) as fp:
-			ret = imsto.store(fp, ctype)
+			ret = imsto.store(fp, ctype, name=os.path.basename(filename))
 			print ret
 	else:
 		print 'image {} not found or access deny'.format(filename)

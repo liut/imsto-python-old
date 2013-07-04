@@ -12,10 +12,10 @@ from _wand import NewMagickWand,MagickReadImage,MagickToMime,\
 MagickGetImageFormat,MagickGetImageWidth,MagickGetImageHeight,MagickGetImageCompressionQuality
 
 __all__ = [
-'check_dirs', 'save_file', 'identify_image', 'guessImageType', 
+'check_dirs', 'save_file', 'identify_image', 'guessImageType',
 'identify_image', 'thumb_image', 'watermark_image', 
 'guess_mimetype', 'guess_ext', 'password_hash',
-'encode_upload'
+'encode_upload', 'jpegoptim'
 ]
 
 def check_dirs(filename):
@@ -23,11 +23,13 @@ def check_dirs(filename):
 	if not os.path.exists(dir_name):
 		os.makedirs(dir_name, 0777)
 
-def save_file(file, filename):
+def save_file(filename, file = None, blob = None):
 	check_dirs(filename)
+	if file is None and blob is None:
+		raise ValueError('invalid argument: file and blob are both None')
 	fp = open(filename, 'wb')
 	try:
-		fp.write(file.read())
+		fp.write(blob if blob else file.read())
 	except Exception, e:
 		print('save file {} failed, error: {}'.format(filename, e))
 	finally:
@@ -247,6 +249,13 @@ def encode_upload(file=None, content=None, content_type=None, name=None, ext_dat
 	body.extend(['--' + BOUNDARY + '--', ''])
 	return 'multipart/form-data; boundary=%s' % BOUNDARY, CRLF.join(body)
 
-
+def jpegoptim(imagefile, max_quality = 88):
+	print 'jpegoptim {} (max {})'.format(imagefile, max_quality)
+	import subprocess
+	r = subprocess.call(["jpegoptim","--strip-all", "--max={}".format(max_quality), imagefile])
+	if r != 0:
+		print 'call jpegoptim failed {}'.format(r)
+		return False
+	return True
 
 

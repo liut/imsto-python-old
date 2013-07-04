@@ -31,10 +31,12 @@ class Config(object):
 		'fs_prefix': 'img',
 		'thumb_path': '/thumb',
 		'thumb_root': '/opt/imsto/cache/thumb/',
+		'temp_root': '/opt/imsto/cache/temp/',
 		'thumb_method': 'shell', # shell, wand, pil
 		'url_prefix': 'http://m.imsto.net/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
 		'max_file_size': '102400',
+		'max_jpeg_quality': '88',
 		'support_size': '120,160,250,400',
 		'admin_name': 'imsto',
 		'admin_pass': '',

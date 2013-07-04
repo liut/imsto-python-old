@@ -8,7 +8,7 @@ Copyright (c) 2010-2013 liut. All rights reserved.
 
 __all__ = ['SimpImage']
 
-import ctypes
+import ctypes,collections
 from _wand import (NewMagickWand,DestroyMagickWand,CloneMagickWand,ClearMagickWand,
 MagickReadImageBlob,MagickReadImage,MagickWriteImage,MagickGetImageBlob,
 MagickGetImageFormat,MagickSetImageFormat,MagickGetImageWidth,MagickGetImageHeight,
@@ -24,6 +24,10 @@ import warnings
 
 import os
 
+# FORMAT_JPEG = 'JPEG'
+# FORMAT_PNG = 'PNG'
+# FORMAT_GIF = 'GIF'
+
 class SimpImage(object):
 	_max_width, _max_height = 0, 0
 
@@ -31,8 +35,17 @@ class SimpImage(object):
 	def __init__(self, file = None, image=None, blob=None):
 		if isinstance(image, SimpImage):
 			self._wand = CloneMagickWand(image.wand)
-		elif blob:
-			MagickReadImageBlob( self._wand, blob, len( blob ) )
+		elif blob is not None:
+			if not isinstance(blob, collections.Iterable):
+				raise TypeError( 'blob must be iterable, not {}'.format(repr(blob)) )
+			if not isinstance(blob, basestring):
+				blob = ''.join(blob)
+			elif not isinstance(blob, str):
+				blob = str(blob)
+			self._wand = NewMagickWand()
+			r = MagickReadImageBlob( self._wand, blob, len( blob ) )
+			if not r:
+				self.error()
 		else:
 			self._wand = NewMagickWand()
 			self.read(file)
@@ -137,6 +150,10 @@ class SimpImage(object):
 	def _get_size( self ):
 		return ( self.width, self.height )
 	size = property( _get_size, scale, None, 'A tuple containing the size of the image. Setting the size is the same as calling scale().' )
+
+	@property
+	def meta(self):
+		return {'format': self.format, 'width': self.width, 'height': self.height, 'quality': self.quality}
 
 	def save( self, file = None ):
 		''' Saves the image to a file.  If no file is specified, the file is

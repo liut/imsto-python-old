@@ -83,11 +83,34 @@ class StoreBase:
 
 		data = content if content is not None else file.read()
 		size = len(data)
-		if (size > int(self.get_config('max_file_size'))):
-			raise ValueError('file: {} too big'.format(name))
 		ext = guessImageType(data[:32])
 		if ext is None:
 			raise ValueError('invalid image file')
+
+		from image import SimpImage
+		im = SimpImage(blob=data)
+		if im.format == 'JPEG':
+			max_jpeg_quality = int(self.get_config('max_jpeg_quality'))
+			if im.quality > max_jpeg_quality:
+				print 'quality {} is too high'.format(im.quality)
+				from tempfile import NamedTemporaryFile
+				_tmp = NamedTemporaryFile('w+b',dir=self.get_config('temp_root'),delete=False)
+				_tmp.file.close()
+				save_file(_tmp.name, blob=data)
+				if jpegoptim(_tmp.name):
+					fp = open(_tmp.name)
+					data = fp.read()
+					size = len(data)
+					print 'new optimized size {}'.format(size)
+					fp.close()
+					_tmp.unlink(_tmp.name)
+					del im
+					im = SimpImage(blob=data)
+		meta = im.meta
+		del im
+
+		if (size > int(self.get_config('max_file_size'))):
+			raise ValueError('file: {} size {}, too big'.format(name, size))
 
 		hashed = md5(data).hexdigest()
 		print ('md5 hash: {}'.format(hashed))
@@ -119,7 +142,7 @@ class StoreBase:
 			raise NotImplementedError()
 
 		# save to mongodb
-		spec = {'_id': id,'filename': filename, 'hash': hashed, 'content_type': ctype, 'content_length': size}
+		spec = {'_id': id,'filename': filename, 'hash': hashed, 'content_type': ctype, 'content_length': size, 'meta': 'meta'}
 		if name:
 			spec['name'] = name
 		rr = self._put(data, **spec)
@@ -221,7 +244,7 @@ class StoreBase:
 			if file is None:
 				print('fetch failed')
 				raise UrlError('id {} not found'.format(id))
-			save_file(file, org_file)
+			save_file(org_file, file)
 
 		if not os.path.exists(org_file):
 			raise UrlError('file not found')
