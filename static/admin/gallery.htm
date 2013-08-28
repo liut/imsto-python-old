@@ -41,7 +41,7 @@
 					//post_data.sort_order = arr[1].value;
 					loadImages(page,post_data);
 				};
-				loadImages(1, post_data);
+				// loadImages(1, post_data);
 
 			$.getJSON('/Manage/Sections', function(res){
 				//console.log(typeof res)
@@ -56,7 +56,8 @@
 				$('input[type=radio]', '#radios1').change(function(e){
 					//console.log(this);
 					loadImages(1, post_data);
-				});
+				}).get(0).checked = true;
+				loadImages(1, post_data);
 			});
 
 			function loadImages(page, post_data) {

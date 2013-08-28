@@ -23,7 +23,7 @@ class Config(object):
 	"""docstring for Config"""
 	def __init__(self):
 		
-		defaulting = {
+		self.defaulting = {
 		'servers': 'localhost',
 		'replica_set': None,
 		'engine': 'mongodb',
@@ -31,7 +31,7 @@ class Config(object):
 		'fs_prefix': 'img',
 		'thumb_path': '/thumb',
 		'thumb_root': '/opt/imsto/cache/thumb/',
-		'temp_root': '/opt/imsto/cache/temp/',
+		'temp_root': '/tmp/',
 		'thumb_method': 'shell', # shell, wand, pil
 		'url_prefix': 'http://m.imsto.net/',
 		'eggs_cache': '/opt/imsto/cache/eggs',
@@ -41,7 +41,7 @@ class Config(object):
 		'admin_name': 'imsto',
 		'admin_pass': '',
 		}
-		self.config = ConfigParser.SafeConfigParser(defaulting)
+		self.config = ConfigParser.ConfigParser()
 		if os.environ.has_key('IMSTO_CONF_DIR'):
 			ini_file = os.path.join(os.environ['IMSTO_CONF_DIR'], 'imsto.ini')
 		else:
@@ -60,22 +60,23 @@ class Config(object):
 	
 	def get(self, name, section='imsto'):
 		"""docstring for get"""
-		val = None
-		if section != 'imsto':
-			try:
-				val = self.config.get(section, name)
-			except Exception, e:
-				if name.startswith('s3_'):
-					val = os.environ.get(name.upper(), None)
-				
-		
-		if val is None:
-			val = self.config.get('imsto', name)
+		for s in [section, 'common']:
+			if self.config.has_option(s, name):
+				return self.config.get(s, name)
 
-		return val
+		if self.defaulting.has_key(name):
+			return self.defaulting[name];
+
+		if name.startswith('s3_'):
+			return os.environ.get(name.upper(), None)
+
+		return None
 
 	def sections(self):
-		return self.config.sections()
+		ss = self.config.sections()
+		if 'common' in ss:
+			del ss[ss.index('common')]
+		return ss
 
 	def has_section(self, section):
 		return self.config.has_section(section)

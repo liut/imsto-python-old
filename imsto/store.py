@@ -94,7 +94,7 @@ class StoreBase:
 		if im.format == 'JPEG':
 			max_jpeg_quality = int(self.get_config('max_jpeg_quality'))
 			if im.quality > max_jpeg_quality:
-				print 'quality {} is too high'.format(im.quality)
+				print 'quality {} is too high, hash {}'.format(im.quality, hashes[0])
 				from tempfile import NamedTemporaryFile
 				_tmp = NamedTemporaryFile('w+b',dir=self.get_config('temp_root'),delete=False)
 				_tmp.file.close()
@@ -113,8 +113,9 @@ class StoreBase:
 		meta = im.meta
 		del im
 
-		if (size > int(self.get_config('max_file_size'))):
-			raise ValueError('file: {} size {}, too big'.format(name, size))
+		max_file_size = int(self.get_config('max_file_size'))
+		if (size > max_file_size):
+			raise ValueError('file: {} size {} is too big, pls less than {}'.format(name, size, max_file_size))
 
 		hashed = hashes[len(hashes)-1] #md5(data).hexdigest()
 		# print ('md5 hash: {}'.format(hashed))
