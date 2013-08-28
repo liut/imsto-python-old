@@ -117,15 +117,15 @@ class StoreBase:
 			raise ValueError('file: {} size {}, too big'.format(name, size))
 
 		hashed = hashes[len(hashes)-1] #md5(data).hexdigest()
-		print ('md5 hash: {}'.format(hashed))
+		# print ('md5 hash: {}'.format(hashed))
 
 		# TODO: add for support (md5 + size) id
 		id = _make_id(hashed)
-		print ('id: {}'.format(id))
+		# print ('id: {}'.format(id))
 
 		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
 		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
-		print ('new filename: %r' % filename)
+		# print ('new filename: %r' % filename)
 
 		# TODO: fix for support s3 front browse
 		_exists_id = self.exists(id) or self.exists(hashed=hashed)
@@ -170,12 +170,16 @@ class StoreBase:
 		'''mongo special meta data'''
 		#if not hasattr(spec, '_id'):
 		#	spec['_id'] = id
-		if not hasattr(spec, 'created'):
+		if 'created' not in spec:
 			spec['created'] = datetime.datetime.utcnow()
+
+		if 'filename' not in spec:
+			print spec
+			raise ValueError('need filename')
 
 		return self.collection.update({'_id': id}, spec, upsert=True)
 
-	def delete(self):
+	def delete(self, id):
 		raise NotImplemented()
 
 	def _get(self, id):
@@ -440,32 +444,49 @@ class StoreEngineS3(StoreBase):
 				key = id
 			else:
 				item = self.get_meta(id)
-				key = item.filename
+				if item:
+					key = item.filename
+				
 		elif isinstance(id, StoreItem):
 			key = id.filename
 		else:
 			raise ValueError('invalid id or key')
 		return self.bucket.get(key)
 
-	def delete(self, key):
-		raise NotImplemented()
+	def delete(self, id):
+		key = None
+		if isinstance(id, str):
+			item = self.get_meta(id)
+			if item:
+				print 'found item id: %s' % id
+				key = item.filename
+		elif isinstance(id, StoreItem):
+			key = id.filename
+			id = id.id
+		else:
+			raise ValueError('invalid id or key')
+		if key is not None and id and self.bucket.delete(key):
+			print 'delete filename: %s ok' % key
+		 	r = self.collection.remove(id,safe=True)
+		 	return 'ok' in r and r['err'] is None
+		return False
 
-	def _put(self, data, filename, content_type, content_length, **spec):
-		'''key=filename'''
+	def _put(self, data, **spec):
 
 		metadata = {}
 		for k in spec['meta']:
-			metadata[k] = str(meta[k])
+			metadata[k] = str(spec['meta'][k])
 
-		if name in spec:
-			metadata['name'] = name
+		if 'name' in spec:
+			metadata['name'] = spec['name']
 
-		headers = {'Content-Length': content_length}
+		headers = {'Content-Length': spec['content_length']}
 		try:
-			self.bucket.put(filename, data=data, mimetype=content_type, metadata=metadata, headers=headers)
-			print "save to s3 ok"
+			filename = spec['filename']
+			self.bucket.put(filename, data=data, mimetype=spec['content_type'], metadata=metadata, headers=headers)
+			print "save ok %s to s3" % filename
 			self._save_meta(spec['_id'], spec)
-			print "save ok %s" % spec['_id']
+			print "save ok meta %s" % spec['_id']
 			return spec['_id']
 		except Exception, e:
 			raise e
@@ -509,7 +530,7 @@ class StoreEngineWeedFs(StoreBase):
 			return StringIO(content)
 		raise ValueError('weed client.retrieve error: invalid response')
 
-	def delete(self):
+	def delete(self, id):
 		raise NotImplemented()
 
 	def _put(self, data, **spec):

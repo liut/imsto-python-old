@@ -221,12 +221,15 @@ def StoredHandler(environ, start_response):
 		return [json.dumps([False, 'bad request'])]
 	oper = form['oper']
 	print(oper)
-	section = form['section'] if form.has_key('section') else 'imsto'
+	section = form.getfirst('roof', 'imsto')
+	# section = form['section'] if form.has_key('section') else 'imsto'
 
 	imsto = load_imsto(section)
 	if oper.value == 'delete':
 		id = form['id']
-		return [json.dumps(imsto.delete(id.value))]
+		r = imsto.delete(id.value)
+		print r
+		return [json.dumps(r)]
 	if oper.value == 'add':
 
 		if "new_file" not in form:

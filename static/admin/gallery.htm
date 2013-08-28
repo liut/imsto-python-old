@@ -93,7 +93,7 @@
 									if (!confirm("确认要删除此图片么，此操作将不可恢复？")) return false;
 									// 删除指定的图片
 									var id = $(this).parent().attr("id").substr(6);
-									$.post(url_stored + "?oper=delete", {id: id}, function(data) {
+									$.post(url_stored + "?oper=delete", {id: id, roof:roof}, function(data) {
 										//log(data, $("#li_iid" + id));
 										if (data === true) {
 											$("#li_iid" + id).fadeOut(function(){$(this).remove();});
