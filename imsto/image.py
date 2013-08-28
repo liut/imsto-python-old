@@ -153,7 +153,7 @@ class SimpImage(object):
 
 	@property
 	def meta(self):
-		return {'format': self.format, 'width': self.width, 'height': self.height, 'quality': self.quality}
+		return {'format': self.format, 'width': int(self.width), 'height': int(self.height), 'quality': int(self.quality)}
 
 	def save( self, file = None ):
 		''' Saves the image to a file.  If no file is specified, the file is

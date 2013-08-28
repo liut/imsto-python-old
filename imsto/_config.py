@@ -65,9 +65,9 @@ class Config(object):
 			try:
 				val = self.config.get(section, name)
 			except Exception, e:
-				#raise e
-				print e
-				pass
+				if name.startswith('s3_'):
+					val = os.environ.get(name.upper(), None)
+				
 		
 		if val is None:
 			val = self.config.get('imsto', name)

@@ -87,6 +87,8 @@ class StoreBase:
 		if ext is None:
 			raise ValueError('invalid image file')
 
+		hashes = [md5(data).hexdigest()]
+
 		from image import SimpImage
 		im = SimpImage(blob=data)
 		if im.format == 'JPEG':
@@ -101,18 +103,20 @@ class StoreBase:
 					fp = open(_tmp.name)
 					data = fp.read()
 					size = len(data)
+
 					print 'new optimized size {}'.format(size)
 					fp.close()
 					_tmp.unlink(_tmp.name)
 					del im
 					im = SimpImage(blob=data)
+					hashes += [md5(data).hexdigest()]
 		meta = im.meta
 		del im
 
 		if (size > int(self.get_config('max_file_size'))):
 			raise ValueError('file: {} size {}, too big'.format(name, size))
 
-		hashed = md5(data).hexdigest()
+		hashed = hashes[len(hashes)-1] #md5(data).hexdigest()
 		print ('md5 hash: {}'.format(hashed))
 
 		# TODO: add for support (md5 + size) id
@@ -137,12 +141,13 @@ class StoreBase:
 			from _util import guess_mimetype
 			ctype = guess_mimetype(filename)
 
-		# TODO: save to s3
-		if self.engine == 's3':
-			raise NotImplementedError()
-
 		# save to mongodb
-		spec = {'_id': id,'filename': filename, 'hash': hashed, 'content_type': ctype, 'content_length': size, 'meta': 'meta'}
+		spec = {'_id': id,'filename': filename, 'hash': hashes, 'content_type': ctype, 'content_length': size, 'meta': meta}
+
+		if self._store_exists(id, filename=filename):
+			self._save_meta(id, spec)
+			return [True, id, filename]
+
 		if name:
 			spec['name'] = name
 		rr = self._put(data, **spec)
@@ -192,6 +197,10 @@ class StoreBase:
 			doc = self.collection.find_one({'md5': hashed})
 			if doc:
 				return doc['_id']
+			doc = self.collection.find_one({'hash': {'$in': [hashed]}})
+			if doc:
+				return doc['_id']
+
 		if filename:
 			doc = self.collection.find_one(filename=filename)
 			if doc:
@@ -295,13 +304,14 @@ class StoreBase:
 	def fetch(self, id, path):
 		key = path if self.engine == 's3' else id
 
-		try:
-			return self._get(key)
-		except Exception, e:
-			print('prepare: {} not found'.format(key))
-			raise e
-		finally:
-			self.close()
+		return self._get(key)
+		# try:
+		# 	return self._get(key)
+		# except Exception, e:
+		# 	print('prepare: {} not found'.format(key))
+		# 	raise e
+		# finally:
+		# 	self.close()
 
 
 	def url(self, path, size='orig'):
@@ -440,14 +450,31 @@ class StoreEngineS3(StoreBase):
 	def delete(self, key):
 		raise NotImplemented()
 
-	def _put(self, data, filename, content_type):
+	def _put(self, data, filename, content_type, content_length, **spec):
 		'''key=filename'''
-		# TODO: save to s3
-		# TODO: save meta, than return new id
-		raise NotImplemented()
+
+		metadata = {}
+		for k in spec['meta']:
+			metadata[k] = str(meta[k])
+
+		if name in spec:
+			metadata['name'] = name
+
+		headers = {'Content-Length': content_length}
+		try:
+			self.bucket.put(filename, data=data, mimetype=content_type, metadata=metadata, headers=headers)
+			print "save to s3 ok"
+			self._save_meta(spec['_id'], spec)
+			print "save ok %s" % spec['_id']
+			return spec['_id']
+		except Exception, e:
+			raise e
+		
 
 	def _store_exists(self, id=None, *args, **kwargs):
-		raise NotImplemented()
+		if 'filename' in kwargs and kwargs['filename'] is not None:
+			return kwargs["filename"] in self.bucket
+		return False
 
 	@property
 	def bucket(self):

@@ -70,7 +70,7 @@ if __name__ == "__main__":
 	elif args.query:
 		imsto = load_imsto(section)
 		method = imsto.get_meta if args.query == 'meta' else imsto.exists
-		print method
+		# print method
 		print method(args.id or None,filename=args.path or None)
 	elif args.add:
 		store_file(filename=args.add)

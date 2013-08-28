@@ -13,7 +13,7 @@ def load_library():
         except (IOError, OSError):
             continue
         return _lib
-    raise ImportError('MagickWand library cannot be found.')
+    raise ImportError('MagickWand library cannot be found or import failed.')
 
 _lib = load_library()
 wand_version = 5

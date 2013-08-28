@@ -8,6 +8,7 @@ Requirements
  * Python 2.7 + [pymongo][pymongo]
  * [ImageMagick][ImageMagick]
  * Nginx + [uWSGI][uWSGI]
+ * jpegoptim (option)
 
 
 

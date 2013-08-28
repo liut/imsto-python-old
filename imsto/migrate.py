@@ -41,7 +41,7 @@ def migrate(from_section,to_section):
 def _store_item(imsto2, item):
 	print 'item size: %s' % item.size
 	r = imsto2.store(item.file, ctype=item.mime, name=item.name)
-	print 'store %s (%s): %s' % (item.id, item.name, r)
+	print 'trans %s (%s): %s' % (item.id, item.name, r)
 
 if __name__ == '__main__':
 	import argparse
