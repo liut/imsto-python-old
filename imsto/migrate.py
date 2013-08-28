@@ -36,9 +36,10 @@ def migrate(from_section, to_section, skip=0):
 	offset = skip if isinstance(skip, Integral) and skip > 0 else 0
 	while offset < total:
 		print 'migrating page {}/{}'.format(offset, total)
-		i = 0
+		i = offset
 		for item in imsto1.browse(limit, offset, only_items=True):
-			print offset + i
+			print '{:5d}'.format(i)
+			i += 1
 			_store_item(imsto2, item)
 		offset += limit
 
