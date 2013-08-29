@@ -76,7 +76,7 @@ class StoreBase:
 	# 		return StoreItem(self, self.__cursor.next())
 	# 	raise StopIteration
 
-	def store(self, file=None, ctype=None, content=None, name=None):
+	def store(self, file=None, ctype=None, content=None, **kwd):
 		"""save a file-like item"""
 		if content is None and not hasattr(file, 'read'):
 			raise TypeError('invalid file-like object')
@@ -89,10 +89,12 @@ class StoreBase:
 
 		hashes = [md5(data).hexdigest()]
 
+		max_jpeg_quality = int(self.get_config('max_jpeg_quality'))
+		if max_jpeg_quality < 72:
+			max_jpeg_quality = 72
 		from image import SimpImage
 		im = SimpImage(blob=data)
 		if im.format == 'JPEG':
-			max_jpeg_quality = int(self.get_config('max_jpeg_quality'))
 			if im.quality > max_jpeg_quality:
 				print 'quality {} is too high, hash {}'.format(im.quality, hashes[0])
 				from tempfile import NamedTemporaryFile
@@ -104,53 +106,60 @@ class StoreBase:
 					data = fp.read()
 					size = len(data)
 
-					print 'new optimized size {}'.format(size)
+					# print 'new optimized size {}'.format(size)
 					fp.close()
 					_tmp.unlink(_tmp.name)
 					del im
 					im = SimpImage(blob=data)
 					hashes += [md5(data).hexdigest()]
+		elif im.format == 'PNG' and self.get_config('force_jpeg'):
+			im.format = 'JPEG'
+			im.quality = max_jpeg_quality
+			data = im.getBlob()
+			size = len(data)
+			hashes += [md5(data).hexdigest()]
+			ext = 'jpg'
 		meta = im.meta
 		del im
 
 		max_file_size = int(self.get_config('max_file_size'))
 		if (size > max_file_size):
-			raise ValueError('file: {} size {} is too big, pls less than {}'.format(name, size, max_file_size))
+			raise ValueError('file: {} size {} is too big, max is {}'.format(name, size, max_file_size))
 
 		hashed = hashes[len(hashes)-1] #md5(data).hexdigest()
 		# print ('md5 hash: {}'.format(hashed))
 
 		# TODO: add for support (md5 + size) id
 		id = _make_id(hashed)
-		# print ('id: {}'.format(id))
 
-		match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
-		filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
 		# print ('new filename: %r' % filename)
 
 		# TODO: fix for support s3 front browse
 		_exists_id = self.exists(id) or self.exists(hashed=hashed)
 		if _exists_id:
 			id = _exists_id
-			match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{20,36})',id)
-			filename = '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
+			filename = _make_filename(id, ext)
 			print ('id {} or hash {} exists!!'.format(id, hashed))
 			#raise DuplicateError('already exists')
 			return [True, id, filename]
+		filename = _make_filename(id, ext)
+		# print ('id: {}'.format(id))
 
 		if ctype is None or ctype == '':
 			from _util import guess_mimetype
 			ctype = guess_mimetype(filename)
 
 		# save to mongodb
-		spec = {'_id': id,'filename': filename, 'hash': hashes, 'content_type': ctype, 'content_length': size, 'meta': meta}
+		spec = {'_id': id,'filename': filename, 'hash': hashes, 'mime': ctype, 'size': size, 'meta': meta}
+
+		for k in ['name', 'created', 'app_id']:
+			if k in kwd and kwd[k]:
+				spec[k] = kwd[k]
 
 		if self._store_exists(id, filename=filename):
 			self._save_meta(id, spec)
 			return [True, id, filename]
 
-		if name:
-			spec['name'] = name
 		rr = self._put(data, **spec)
 		if rr:
 			return [True, rr, filename]
@@ -336,8 +345,8 @@ class StoreItem(dict):
 				self[key.lower()] = value
 				if key == 'id':
 					self.id = value
-			if not self.has_key('name') or self['name'] is None:
-				self.name = self.id + guess_ext(self['mime'])
+			# if not self.has_key('name') or self['name'] is None:
+			# 	self.name = self.id + guess_ext(self['mime'])
 
 	def __getattr__(self, name):
 		if name == 'dict':
@@ -362,6 +371,9 @@ class StoreItem(dict):
 			item['filename'] = item.pop('path')
 		item.pop('chunkSize', None)
 		item.pop('app_id', None)
+		if item.has_key('md5') and not item.has_key('hash'):
+			item['hash'] = [item['md5']]
+			# item.pop('md5', None)
 		# print item
 		return item
 
@@ -397,6 +409,12 @@ def _make_id(hashed, size=None):
 		raise TypeError('expected a int, not ' + repr(size))
 	return base_convert('{}{:02x}'.format(hashed, size % 255), 16, 36)
 
+def _make_filename(id, ext):
+	match = re.match('([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{16,36})',id)
+	if match:
+		return '{0[0]}/{0[1]}/{0[2]}.{1}'.format(match.groups(), ext)
+	raise ValueError('invalid id %s' % id)
+	# return id + '.' + ext
 
 
 class StoreEngineGridFs(StoreBase):
@@ -481,10 +499,10 @@ class StoreEngineS3(StoreBase):
 		if 'name' in spec:
 			metadata['name'] = spec['name']
 
-		headers = {'Content-Length': spec['content_length']}
+		headers = {'Content-Length': spec['size']}
 		try:
 			filename = spec['filename']
-			self.bucket.put(filename, data=data, mimetype=spec['content_type'], metadata=metadata, headers=headers)
+			self.bucket.put(filename, data=data, mimetype=spec['mime'], metadata=metadata, headers=headers)
 			print "save ok %s to s3" % filename
 			self._save_meta(spec['_id'], spec)
 			print "save ok meta %s" % spec['_id']
@@ -503,6 +521,8 @@ class StoreEngineS3(StoreBase):
 		if self._bucket is None:
 			from simples3 import S3Bucket, KeyNotFound
 			bucket_name = self.get_config('bucket_name')
+			if bucket_name is None:
+				raise ValueError("no bucket_name in section '%s'" % self.section)
 			access_key = self.get_config('s3_access_key')
 			secret_key = self.get_config('s3_secret_key')
 			self._bucket = S3Bucket(bucket_name, access_key=access_key, secret_key=secret_key)
@@ -536,7 +556,7 @@ class StoreEngineWeedFs(StoreBase):
 
 	def _put(self, data, **spec):
 		volume_host, fid = self.client.assign()
-		ret = self.client.store(volume_host, fid, content=data, name=spec['filename'], content_type=spec['content_type'])
+		ret = self.client.store(volume_host, fid, content=data, name=spec['filename'], content_type=spec['mime'])
 		if isinstance(ret, int) and ret > 0:
 			print 'saved {}/{} size {} bytes'.format(volume_host, fid, ret)
 			spec[WEED_HOST] = volume_host

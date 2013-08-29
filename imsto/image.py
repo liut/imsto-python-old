@@ -155,16 +155,20 @@ class SimpImage(object):
 	def meta(self):
 		return {'format': self.format, 'width': int(self.width), 'height': int(self.height), 'quality': int(self.quality)}
 
+	def getBlob(self):
+		size = ctypes.c_size_t()
+		b = MagickGetImageBlob( self._wand, ctypes.byref(size) )
+		if b and size.value:
+			blob = ctypes.string_at(b, size.value)
+			MagickRelinquishMemory(b)
+			return blob
+		self.error()
+
 	def save( self, file = None ):
 		''' Saves the image to a file.  If no file is specified, the file is
 			saved with the original filename.'''
 		if hasattr( file, 'write' ):
-			size = size_t()
-			b = MagickGetImageBlob( self._wand, size )
-			try:
-				return file.write( ''.join( [chr( b[i] ) for i in range( 0, size.value + 1 )] ) )
-			finally:
-				MagickRelinquishMemory( b )
+			return file.write( self.getBlob() )
 		else:
 			r = MagickWriteImage( self._wand, file )
 
