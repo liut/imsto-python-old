@@ -38,9 +38,9 @@ def migrate(from_section, to_section, skip=0):
 		print 'migrating page {}/{}'.format(offset, total)
 		i = offset
 		for item in imsto1.browse(limit, offset, only_items=True):
-			print "start trans {:4d} {},{},{},{}".format(i, item.id, item.filename, item.size, item.name)
+			print "start trans {:4d} {},{},{}".format(i, item.id, item.filename, item.size)
 			r = _store_item(imsto2, item)
-			print 'trans ok: %s' % r
+			print 'trans ok: %s, %s' % (r, item.name)
 			i += 1
 		offset += limit
 

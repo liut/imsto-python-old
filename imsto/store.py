@@ -497,7 +497,9 @@ class StoreEngineS3(StoreBase):
 			metadata[k] = str(spec['meta'][k])
 
 		if 'name' in spec:
-			metadata['name'] = spec['name']
+			from urllib import quote_plus
+			metadata['name'] = quote_plus(spec['name'].encode('utf-8') if isinstance(spec['name'], unicode) else spec['name'])
+			# print metadata['name']
 
 		headers = {'Content-Length': spec['size']}
 		try:
