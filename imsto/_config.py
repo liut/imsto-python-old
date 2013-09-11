@@ -66,11 +66,13 @@ class Config(object):
 			if self.config.has_option(s, name):
 				return self.config.get(s, name)
 
+		if name.startswith('s3_'):
+			if not name.upper() in os.environ:
+				print 'ENV %s not found' % name.upper()
+			return os.environ.get(name.upper(), None)
+
 		if self.defaulting.has_key(name):
 			return self.defaulting[name];
-
-		if name.startswith('s3_'):
-			return os.environ.get(name.upper(), None)
 
 		return None
 
