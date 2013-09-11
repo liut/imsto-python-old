@@ -19,7 +19,7 @@ from _util import *
 
 __all__ = [
 	'load_imsto',
-	'EngineError', 'UrlError', 'DuplicateError', 
+	'EngineError', 'UrlError', 'HttpFound', 'DuplicateError', 
 ]
 
 def load_imsto(section='imsto'):
@@ -76,7 +76,7 @@ class StoreBase:
 	# 		return StoreItem(self, self.__cursor.next())
 	# 	raise StopIteration
 
-	def store(self, file=None, ctype=None, content=None, **kwd):
+	def store(self, file=None, content=None, ctype=None, **kwd):
 		"""save a file-like item"""
 		if content is None and not hasattr(file, 'read'):
 			raise TypeError('invalid file-like object')
@@ -88,12 +88,41 @@ class StoreBase:
 			raise ValueError('invalid image file')
 
 		hashes = [md5(data).hexdigest()]
+		_exists_id = self.exists(hashed=hashes[0])
+		if _exists_id:
+			id = _exists_id
+			filename = _make_filename(id, ext)
+			print ('id {} or hash {} exists!!'.format(id, hashes[0]))
+			#raise DuplicateError('already exists')
+			return [True, id, filename]
+		ids = [_make_id(hashes[0])]
+		if 'id' in kwd and kwd['id'] and kwd['id'] not in ids:
+			ids += [kwd['id']]
 
+		from image import SimpImage, MIN_QUALITY
+
+		max_file_size = int(self.get_config('max_file_size'))
 		max_jpeg_quality = int(self.get_config('max_jpeg_quality'))
-		if max_jpeg_quality < 72:
-			max_jpeg_quality = 72
-		from image import SimpImage
+		max_width = int(self.get_config('max_width'))
+		max_height = int(self.get_config('max_height'))
+
+		if size > max_file_size: max_jpeg_quality -= 1
+		if max_jpeg_quality < MIN_QUALITY: max_jpeg_quality = MIN_QUALITY
+
 		im = SimpImage(blob=data)
+		meta = im.meta
+		if meta['width'] > max_width or meta['height'] > max_height:
+			if self.get_config('auto_scale') and im.thumbnail(max_width, max_height):
+				if im.format == 'JPEG' and im.quality > max_jpeg_quality:
+					im.quality = max_jpeg_quality
+				data = im.get_blob()
+				size = len(data)
+				print im.meta
+				print 'new scaled size {}'.format(size)
+				hashes += [md5(data).hexdigest()]
+			else:
+				raise ValueError('file: {} dimension {}x{} is too big, max is {}x{}'.format(kwd['name'] if 'name' in kwd else '', meta['width'], meta['height'], max_width, max_height))
+
 		if im.format == 'JPEG':
 			if im.quality > max_jpeg_quality:
 				print 'quality {} is too high, hash {}'.format(im.quality, hashes[0])
@@ -111,20 +140,22 @@ class StoreBase:
 					_tmp.unlink(_tmp.name)
 					del im
 					im = SimpImage(blob=data)
+					meta = im.meta
 					hashes += [md5(data).hexdigest()]
+				else:
+					raise EnvironmentError('jpeg qualty is too high, or need jpegoptim')
 		elif im.format == 'PNG' and self.get_config('force_jpeg'):
 			im.format = 'JPEG'
 			im.quality = max_jpeg_quality
-			data = im.getBlob()
+			data = im.get_blob()
 			size = len(data)
 			hashes += [md5(data).hexdigest()]
 			ext = 'jpg'
-		meta = im.meta
+			meta = im.meta
 		del im
 
-		max_file_size = int(self.get_config('max_file_size'))
 		if (size > max_file_size):
-			raise ValueError('file: {} size {} is too big, max is {}'.format(name, size, max_file_size))
+			raise ValueError('file: {} size {} is too big, max is {}'.format(kwd['name'] if 'name' in kwd else '', size, max_file_size))
 
 		hashed = hashes[len(hashes)-1] #md5(data).hexdigest()
 		# print ('md5 hash: {}'.format(hashed))
@@ -145,14 +176,17 @@ class StoreBase:
 		filename = _make_filename(id, ext)
 		# print ('id: {}'.format(id))
 
-		if ctype is None or ctype == '':
-			from _util import guess_mimetype
-			ctype = guess_mimetype(filename)
+		# if ctype is None or ctype == '':
+		from _util import guess_mimetype
+		ctype = guess_mimetype(filename)
 
 		# save to mongodb
-		spec = {'_id': id,'filename': filename, 'hash': hashes, 'mime': ctype, 'size': size, 'meta': meta}
+		spec = {'_id': id,'filename': filename, 'hash': hashes, 'mime': ctype, 'size': size, 'meta': meta, 'ids': ids}
 
-		for k in ['name', 'created', 'app_id']:
+		if 'name' in kwd and isinstance(kwd['name'], (str, unicode)):
+			spec['name'] = kwd['name']
+
+		for k in ['created', 'app_id']:
 			if k in kwd and kwd[k]:
 				spec[k] = kwd[k]
 
@@ -164,12 +198,15 @@ class StoreBase:
 		if rr:
 			return [True, rr, filename]
 	
-	def get_meta(self, id=None, filename=None):
+	def get_meta(self, id=None, filename=None, ids=None):
 		spec = None
 		if id:
 			spec = id
 		elif filename:
 			spec = {'filename': filename}
+		elif ids and isinstance(ids, type([])):
+			spec = {'ids': {'$in': ids}}
+
 		if spec:
 			print 'spec %s' % spec
 			item = self.collection.find_one(spec)
@@ -262,6 +299,15 @@ class StoreBase:
 		org_file = '{0}/orig/{1}'.format(THUMB_ROOT, org_path)
 
 		if not os.path.exists(org_file):
+
+			# check old id for redirect
+			doc = self.get_meta(ids=[id])
+			if doc and doc['id'] != id and 'filename' in doc:
+				print 'found %s' % doc['filename']
+				thumb_path = self.get_config('thumb_path')
+				new_path = '{}/{}/{}'.format(thumb_path, ids['size'], doc['filename'])
+				raise HttpFound('found', path=new_path)
+
 			print('fetching file: {}'.format(org_path))
 			file = self.fetch(id, path=org_path)
 			if file is None:
@@ -318,14 +364,13 @@ class StoreBase:
 	def fetch(self, id, path):
 		key = path if self.engine == 's3' else id
 
-		return self._get(key)
-		# try:
-		# 	return self._get(key)
-		# except Exception, e:
-		# 	print('prepare: {} not found'.format(key))
-		# 	raise e
-		# finally:
-		# 	self.close()
+		# return self._get(key)
+		try:
+			return self._get(key)
+		except Exception, e:
+			print('prepare: {} not found'.format(key))
+			# raise e
+		
 
 
 	def url(self, path, size='orig'):
@@ -390,8 +435,17 @@ class UrlError(Exception):
 	""" Invalid Url or path """
 	pass
 
+class HttpFound(Exception):
+	""" TODO: path has been changed """
+
+	def __init__(self, message, path, **kwds):
+		self.args = message, kwds.copy()
+		self.msg, self.extra = self.args
+		self.path = path
+
+
 class DuplicateError(Exception):
-	""" Invalid Url or path """
+	""" Entry Duplicated """
 	pass
 
 def get_mongo_db(host_or_uri, db_name, replica_set = None):
@@ -465,7 +519,7 @@ class StoreEngineS3(StoreBase):
 				item = self.get_meta(id)
 				if item:
 					key = item.filename
-				
+					# print 'found %s' % item
 		elif isinstance(id, StoreItem):
 			key = id.filename
 		else:
@@ -496,7 +550,7 @@ class StoreEngineS3(StoreBase):
 		for k in spec['meta']:
 			metadata[k] = str(spec['meta'][k])
 
-		if 'name' in spec:
+		if 'name' in spec and isinstance(spec['name'], (str, unicode)):
 			from urllib import quote_plus
 			metadata['name'] = quote_plus(spec['name'].encode('utf-8') if isinstance(spec['name'], unicode) else spec['name'])
 			# print metadata['name']

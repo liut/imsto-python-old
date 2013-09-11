@@ -37,6 +37,8 @@ class Config(object):
 		'eggs_cache': '/opt/imsto/cache/eggs',
 		'max_file_size': '102400',
 		'max_jpeg_quality': '88',
+		'max_width': '1920',
+		'max_height': '1920',
 		'support_size': '120,160,250,400',
 		'admin_name': 'imsto',
 		'admin_pass': '',

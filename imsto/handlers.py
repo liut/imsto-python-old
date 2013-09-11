@@ -27,6 +27,10 @@ def not_found(environ, start_response, message = 'Not Found'):
 	start_response('404 NOT FOUND', [('Content-Type', 'text/plain')])
 	return [message]
 
+def redirect(environ, start_response, redirect_to, message = 'Found'):
+	start_response('302 Found', [('Location', redirect_to)])
+	return []
+
 def print_env(environ, start_response):
 	"""list environ items"""
 	start_response('200 OK', [('Content-Type', 'text/plain')])
@@ -54,10 +58,7 @@ class ErrorWrap(object):
 			for item in appiter:
 				yield item
 		except:
-			e_type, e_value, tb = exc_info()
-			traceback = ['Traceback (most recent call last):']
-			traceback += format_tb(tb)
-			traceback.append('%s: %s' % (e_type.__name__, e_value))
+			traceback = get_traceback()
 			try:
 				start_response('500 INTERNAL SERVER ERROR', [
 							   ('Content-Type', 'text/plain')])
@@ -68,6 +69,12 @@ class ErrorWrap(object):
 		if hasattr(appiter, 'close'):
 			appiter.close()
 
+def get_traceback():
+	e_type, e_value, tb = exc_info()
+	traceback = ['Traceback (most recent call last):']
+	traceback += format_tb(tb)
+	traceback.append('%s: %s' % (e_type.__name__, e_value))
+	return traceback
 
 class AuthWrap(object):
 
@@ -133,6 +140,8 @@ def ImageHandler(environ, start_response):
 	#print 'path: %s' % path
 	try:
 		dst_file, dst_path = imsto.load(path)
+	except HttpFound, e:
+		return redirect(environ, start_response, e.path, e.message)
 	except UrlError, e:
 		return not_found(environ, start_response, e.message)
 	except Exception, e:
@@ -238,22 +247,26 @@ def StoredHandler(environ, start_response):
 		new_file = form['new_file']
 		if new_file is None:
 			return [json.dumps([False, 'invalid upload field'])]
-		print(type(new_file))
+		# print(type(new_file))
 		result = []
 		if type(new_file) == type([]):
 			for f in new_file:
 				print('%r %r %r %r %r %r' % (f.name, f.filename, f.type, f.disposition, f.file, f.length))
-				id = imsto.store(f.file, ctype=f.type, name=f.filename)
-				print('new_id: %r' % id)
-				result.append(id)
+				r = imsto.store(f.file, ctype=f.type, name=f.filename)
+				print 'store: %r, result %r' % (f.name, r)
+				if type(r) == type([]):
+					result.append(r)
+				else:
+					result.append(False)
 		else:
 			f = new_file
 			print('single file %r %r' % (f.name, f.filename))
 			try:
 				result = imsto.store(f.file, ctype=f.type, name=f.filename)
-				print('new_id: %r' % result[1])
-			except DuplicateError, e:
+				print 'store: %r, result %r' % (f.name, result)
+			except Exception, e:
 				result = [False, e.message]
+				print "\n".join(get_traceback()) + "\n"
 			
 		if hasattr(imsto, 'close'):
 			imsto.close()

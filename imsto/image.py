@@ -6,7 +6,7 @@ Created by liut on 2010-12-04.
 Copyright (c) 2010-2013 liut. All rights reserved.
 """
 
-__all__ = ['SimpImage']
+__all__ = ['SimpImage', 'MIN_QUALITY']
 
 import ctypes,collections
 from _wand import (NewMagickWand,DestroyMagickWand,CloneMagickWand,ClearMagickWand,
@@ -27,6 +27,8 @@ import os
 # FORMAT_JPEG = 'JPEG'
 # FORMAT_PNG = 'PNG'
 # FORMAT_GIF = 'GIF'
+
+MIN_QUALITY = 72
 
 class SimpImage(object):
 	_max_width, _max_height = 0, 0
@@ -147,15 +149,15 @@ class SimpImage(object):
 			size - A tuple containing the size of the scaled image.'''
 		MagickScaleImage( self._wand, size[0], size[1] )
 
-	def _get_size( self ):
+	def get_size( self ):
 		return ( self.width, self.height )
-	size = property( _get_size, scale, None, 'A tuple containing the size of the image. Setting the size is the same as calling scale().' )
+	size = property( get_size, scale, None, 'A tuple containing the size of the image. Setting the size is the same as calling scale().' )
 
 	@property
 	def meta(self):
 		return {'format': self.format, 'width': int(self.width), 'height': int(self.height), 'quality': int(self.quality)}
 
-	def getBlob(self):
+	def get_blob(self):
 		size = ctypes.c_size_t()
 		b = MagickGetImageBlob( self._wand, ctypes.byref(size) )
 		if b and size.value:
@@ -168,7 +170,7 @@ class SimpImage(object):
 		''' Saves the image to a file.  If no file is specified, the file is
 			saved with the original filename.'''
 		if hasattr( file, 'write' ):
-			return file.write( self.getBlob() )
+			return file.write( self.get_blob() )
 		else:
 			r = MagickWriteImage( self._wand, file )
 
