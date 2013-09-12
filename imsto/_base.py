@@ -34,18 +34,22 @@ def base_convert(number,frombase = 10, tobase = 36):
 	todigits = BASE62[:tobase]
 	
 	#print(fromdigits, todigits)
+	#print(len(fromdigits), len(todigits))
 	
 	# make an integer out of the number
 	x=long(0)
 	for digit in str(number):
-		x = x*len(fromdigits) + fromdigits.index(digit)
+		#print '%d %s %d' % (x, digit, fromdigits.index(digit))
+		x = x*frombase + fromdigits.index(digit)
 	
-	# create the result in base 'len(todigits)'
+	#print 'last x: %s' % x
+	## create the result in base 'len(todigits)'
 	res=""
 	while x>0:
-		digit = x % len(todigits)
+		digit = x % tobase
+		#print 'x %s d %s' % (x, digit)
 		res = todigits[digit] + res
-		x /= len(todigits)
+		x /= tobase
 	if neg:
 		res = "-"+res
 
@@ -54,7 +58,7 @@ def base_convert(number,frombase = 10, tobase = 36):
 if __name__ == '__main__':
 	a = 45
 	print '{0}: {1}'.format(a, base_convert(a, 10, 36))
-	a = 'aac'
+	a = 'abcd'
 	print '{0}: {1}'.format(a, base_convert(a, 16, 36))
 	a = '5cc163b92ab9b482b4486999d354f91e'
 	print '{0}: {1}'.format(a, base_convert(a, 16, 36))
