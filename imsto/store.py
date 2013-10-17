@@ -94,7 +94,7 @@ class StoreBase:
 			filename = _make_filename(id, ext)
 			print ('id {} or hash {} exists!!'.format(id, hashes[0]))
 			#raise DuplicateError('already exists')
-			return [True, id, filename]
+			return [True, id, filename, 0]
 		ids = [_make_id(hashes[0])]
 		if 'id' in kwd and kwd['id'] and kwd['id'] not in ids:
 			ids += [kwd['id']]
@@ -364,12 +364,13 @@ class StoreBase:
 	def fetch(self, id, path):
 		key = path if self.engine == 's3' else id
 
-		# return self._get(key)
-		try:
-			return self._get(key)
-		except Exception, e:
-			print('prepare: {} not found'.format(key))
-			# raise e
+		return self._get(key)
+		# try:
+		# 	return self._get(key)
+		# except Exception, e:
+		# 	print('prepare: {} not found'.format(key))
+		# 	print e
+		# 	raise e
 		
 
 
