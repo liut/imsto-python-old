@@ -73,16 +73,7 @@ class ImageStorage(Storage):
 		"""
 		print 'src name: %s' % name
 		return os.path.basename(name)
-		file_root, file_ext = os.path.splitext(name)
-		# If the filename already exists, add an underscore and a number (before
-		# the file extension, if one exists) to the filename until the generated
-		# filename doesn't exist.
-		count = itertools.count(1)
-		while self.exists(name):
-			# file_ext includes the dot.
-			name = os.path.join("%s_%s%s" % (file_root, count.next(), file_ext))
 
-		return name
 
 	def _save(self, name, content):
 		print 'available name: %s' % name
