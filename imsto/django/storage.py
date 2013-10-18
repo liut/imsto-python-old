@@ -92,7 +92,7 @@ class ImageStorage(Storage):
 			print 'temp file: %s' % file
 		r, id, filename = self.imsto.store(content.file,name=name)
 
-		print 'stored {}, {}'.format(r, id)
+		print 'stored {}, {}, {}'.format(r, id, filename)
 		if r:
 			return filename
 		return None

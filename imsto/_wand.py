@@ -4,7 +4,7 @@ from ctypes import *
 from ctypes.util import find_library
 
 def load_library():
-    for suffix in '', '-Q16', '-Q8', '-6.Q16':
+    for suffix in '-6.Q16', '-Q16', '', '-Q8':
         wand_lib = find_library('MagickWand' + suffix)
         if not wand_lib:
             continue
